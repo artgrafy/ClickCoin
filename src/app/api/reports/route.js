@@ -21,12 +21,13 @@ export async function GET() {
             aiReports = await redis.get('coin_market_reports') || [];
         }
 
-        // 2. 로컬 파일(Human) 데이터와 병합 (ID가 같으면 로컬 파일 우선)
-        const combined = [...STATIC_REPORTS];
+        // 2. 데이터 병합 (동일 ID 발생 시 로컬 파일보다 AI 생성 데이터를 우선함)
+        const combined = [...aiReports];
+        const aiIds = new Set(aiReports.map(r => r.id));
 
-        aiReports.forEach(aiR => {
-            if (!combined.some(hR => hR.id === aiR.id)) {
-                combined.push(aiR);
+        STATIC_REPORTS.forEach(hR => {
+            if (!aiIds.has(hR.id)) {
+                combined.push(hR);
             }
         });
 
