@@ -1,0 +1,11 @@
+{
+    "github": {
+        "enabled": false
+    },
+    "crons": [
+        {
+            "path": "/clickcoin/api/reports/cron",
+            "schedule": "30 7 * * 1-5"
+        }
+    ]
+}
