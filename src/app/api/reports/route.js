@@ -18,7 +18,7 @@ export async function GET() {
         // 1. 서버 저장소(AI) 데이터 가져오기
         let aiReports = [];
         if (redis) {
-            aiReports = await redis.get('market_reports') || [];
+            aiReports = await redis.get('coin_market_reports') || [];
         }
 
         // 2. 로컬 파일(Human) 데이터와 병합 (ID가 같으면 로컬 파일 우선)

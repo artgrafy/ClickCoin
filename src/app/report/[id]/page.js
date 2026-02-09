@@ -20,7 +20,7 @@ async function getReport(id) {
 
     // 2. 없으면 Redis(AI)에서 찾기
     if (redis) {
-        const aiReports = await redis.get('market_reports') || [];
+        const aiReports = await redis.get('coin_market_reports') || [];
         return aiReports.find(r => r.id === id);
     }
     return null;

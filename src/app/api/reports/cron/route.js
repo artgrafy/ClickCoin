@@ -98,14 +98,14 @@ export async function GET() {
         }
 
         if (newReport && redis) {
-            const existing = await redis.get('market_reports') || [];
+            const existing = await redis.get('coin_market_reports') || [];
             const filtered = existing.filter(r => r.id !== dateStr);
             const updated = [newReport, ...filtered].slice(0, 30);
-            await redis.set('market_reports', updated);
+            await redis.set('coin_market_reports', updated);
 
             // 📬 뉴스레터 발송 (비동기)
             try {
-                const subscribers = await redis.smembers('newsletter_subscribers');
+                const subscribers = await redis.smembers('coin_newsletter_subscribers');
                 if (subscribers && subscribers.length > 0) {
                     const { sendNewsletter } = await import('@/lib/email');
                     await sendNewsletter(subscribers, newReport);

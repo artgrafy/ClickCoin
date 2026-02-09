@@ -54,7 +54,7 @@ async function getStockData(symbol) {
 export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type') || 'rising'; // 기본값 상승순
-    const cacheKey = `scan_results_${type}`;
+    const cacheKey = `coin_scan_results_${type}`;
 
     // 1. Check Redis Cache
     if (redis) {

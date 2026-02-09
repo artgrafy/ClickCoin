@@ -1,36 +1,25 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ClickCoin (Beta)
+바로 오늘, 바로 당신을 위한 미니멀 코인 분석 플랫폼
 
-## Getting Started
+ClickCoin은 Gemini AI와 Yahoo Finance 데이터를 활용하여 암호화폐 시장의 기술적 지표를 분석하고 요약 리포트를 제공하는 서비스입니다.
 
-First, run the development server:
+## 주요 기능
+- **실시간 코인 분석**: 시가총액 상위 30개 코인에 대한 기술적 분석 및 AI 코멘트 제공
+- **미니멀 리포트**: 캔들차트 추세추종 원칙에 기반한 핵심 요약 리포트
+- **뉴스레터**: 매일 최신 코인 시황 정보를 이메일로 발송
 
+## 기술 스택
+- **Framework**: Next.js (App Router)
+- **AI**: Google Gemini Pro (1.5 Flash / 2.0 Flash)
+- **Database**: Upstash Redis (Vercel KV)
+- **Email**: Resend API
+- **Chart**: Lightweight Charts
+
+## 시작하기
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 라이선스
+© 2026 ClickCoin. All rights reserved.

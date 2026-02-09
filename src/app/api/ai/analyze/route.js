@@ -36,7 +36,7 @@ export async function POST(req) {
         }
 
         // 1. Redis 캐시 확인 (있으면 즉시 반환)
-        const cacheKey = `ai_analysis_${symbol}`;
+        const cacheKey = `coin_ai_analysis_${symbol}`;
         if (redis) {
             try {
                 const cached = await redis.get(cacheKey);

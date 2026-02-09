@@ -27,7 +27,7 @@ export async function POST(req) {
         }
 
         // Redis SADD (Set에 추가하여 중복 방지)
-        await redis.sadd('newsletter_subscribers', email);
+        await redis.sadd('coin_newsletter_subscribers', email);
 
         return NextResponse.json({ success: true, message: "구독이 완료되었습니다! 최신 시황 리포트를 보내드릴게요." });
     } catch (error) {
