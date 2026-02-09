@@ -26,9 +26,9 @@ export async function GET() {
 
         const ai = new GoogleGenAI({ apiKey });
         const modelChain = [
-            { name: 'gemini-2.0-flash-thinking-preview-01-21', thinking: true },
+            { name: 'gemini-2.0-flash-thinking-preview', thinking: true },
             { name: 'gemini-2.0-flash', thinking: false },
-            { name: 'gemini-1.5-flash', thinking: false }
+            { name: 'gemini-2.0-pro-exp-02-05', thinking: false }
         ];
 
         const prompt = `당신은 글로벌 1위 가상자산 전문 분석가이며, 성승현 저자의 '캔들차트 추세추종 투자 원칙'을 가상자산 시장에 완벽하게 응용시킨 전문가입니다. 
@@ -94,7 +94,9 @@ export async function GET() {
                     newReport.createdAt = new Date().toISOString(); // 작성 시간 추가
                     break;
                 }
-            } catch (err) { }
+            } catch (err) {
+                console.error(`Model ${m.name} failed:`, err.message);
+            }
         }
 
         if (newReport && redis) {
