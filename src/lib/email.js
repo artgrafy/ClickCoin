@@ -19,13 +19,13 @@ export async function sendNewsletter(subscribers, report) {
         // 메일 클라이언트 호환성을 극대화한 HTML (표준 스타일 사용)
         const htmlContent = `
 <div style="font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333; line-height: 1.6; background-color: #ffffff;">
-    <header style="border-bottom: 2px solid #FF3B30; padding-bottom: 20px; margin-bottom: 30px;">
-        <h1 style="color: #FF3B30; margin: 0; font-size: 28px;">ClickCoin</h1>
+    <header style="border-bottom: 2px solid #0A84FF; padding-bottom: 20px; margin-bottom: 30px;">
+        <h1 style="color: #0A84FF; margin: 0; font-size: 28px;">ClickCoin</h1>
         <p style="margin: 5px 0 0; color: #666;">${date} 오늘의 코인 정보 (Beta)</p>
     </header>
     
     <h2 style="font-size: 22px; margin-bottom: 15px; color: #000;">${title}</h2>
-    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #FF3B30;">
+    <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #0A84FF;">
         <p style="margin: 0; font-weight: bold;">${summary.replace(/^요약:\s*/, '')}</p>
     </div>
 
