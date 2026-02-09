@@ -26,9 +26,9 @@ export async function GET() {
 
         const ai = new GoogleGenAI({ apiKey });
         const modelChain = [
-            { name: 'gemini-2.0-flash-thinking-preview', thinking: true },
+            { name: 'gemini-2.0-flash-thinking-preview-01-21', thinking: true },
             { name: 'gemini-2.0-flash', thinking: false },
-            { name: 'gemini-2.0-pro-exp-02-05', thinking: false }
+            { name: 'gemini-1.5-flash', thinking: false }
         ];
 
         const prompt = `당신은 글로벌 1위 가상자산 전문 분석가이며, 성승현 저자의 '캔들차트 추세추종 투자 원칙'을 가상자산 시장에 완벽하게 응용시킨 전문가입니다. 
@@ -66,7 +66,9 @@ export async function GET() {
             { "type": "paragraph", "text": "시가 위치 및 4등분선 기준 대응 전략 문단..." },
             { "type": "quote", "text": "전문가로서 남기는 마지막 핵심 제언" }
           ]
-        }`;
+        }
+        
+        [중요] 반드시 유효한 JSON 형식으로만 응답하며, 텍스트 설명이나 코드 블록 기호(\`\`\`json)를 포함하지 마세요. 오직 { 로 시작해서 } 로 끝나는 JSON 문자열만 출력해야 합니다.`;
 
         const getAIResponse = async (model, useThinking) => {
             const config = {
