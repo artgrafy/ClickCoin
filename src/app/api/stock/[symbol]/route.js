@@ -1,44 +1,38 @@
-import YahooFinance from 'yahoo-finance2';
-import { NextResponse } from 'next/server';
 
-const yahooFinance = new YahooFinance();
+import { NextResponse } from 'next/server';
 
 export async function GET(request, { params }) {
     const { symbol } = await params;
-    const stockSymbol = symbol;
+    const mcpUrl = process.env.MCP_SERVER_URL || 'http://localhost:3000/api/mcp';
+    const mcpKey = process.env.INTERNAL_MCP_API_KEY;
 
     try {
-        const today = new Date();
-        const past = new Date();
-        // Calculate enough days back to get 120 trading days (weekends + holidays)
-        past.setDate(today.getDate() - 250);
-
-        // Ensure we're using the instance method
-        const result = await yahooFinance.historical(stockSymbol, {
-            period1: past,
-            period2: new Date(),
-            interval: '1d',
+        // 본진 MCP 서버(Success365)에 분석 요청
+        const response = await fetch(mcpUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-mcp-key': mcpKey
+            },
+            body: JSON.stringify({
+                tool: 'get_coin_status',
+                params: {
+                    symbol: symbol,
+                    interval: '1d'
+                }
+            })
         });
 
-        if (!result || result.length === 0) {
-            return NextResponse.json({ error: 'No data found' }, { status: 404 });
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`MCP Server Error: ${errorText}`);
         }
 
-        const chartData = result.map(quote => ({
-            time: quote.date.toISOString().split('T')[0],
-            open: quote.open,
-            high: quote.high,
-            low: quote.low,
-            close: quote.close,
-            volume: quote.volume,
-        }));
+        const data = await response.json();
 
-        // Slice request: 120 days
-        const latest120 = chartData.slice(-120);
-
-        return NextResponse.json(latest120);
+        return NextResponse.json(data.result);
     } catch (error) {
-        console.error('Stock fetch error:', error);
-        return NextResponse.json({ error: 'Failed to fetch data', details: error.message }, { status: 500 });
+        console.error('MCP Proxy Error:', error);
+        return NextResponse.json({ error: 'Failed to fetch analysis from Hub', info: error.message }, { status: 500 });
     }
 }
