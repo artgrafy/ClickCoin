@@ -35,7 +35,7 @@ export const StockChart = ({ data, colors: {
                 },
             },
             localization: {
-                priceFormatter: (price) => Math.round(price).toLocaleString(),
+                priceFormatter: (price) => price < 10 ? price.toFixed(4) : Math.round(price).toLocaleString(),
             },
         });
 
@@ -84,11 +84,34 @@ export const StockChart = ({ data, colors: {
         }));
         volumeSeries.setData(volumeData);
 
-        const { lineData, markers, keyLevels } = calculateZigZag(data);
+        const { lineData, markers, keyLevels, bbData } = calculateZigZag(data);
+
+        // Bollinger Bands
+        if (bbData && bbData.length > 0) {
+            const upperSeries = chart.addLineSeries({
+                color: 'rgba(10, 132, 255, 0.15)',
+                lineWidth: 1,
+                lineStyle: LineStyle.Dashed,
+                crosshairMarkerVisible: false,
+                lastValueVisible: false,
+                priceLineVisible: false,
+            });
+            const lowerSeries = chart.addLineSeries({
+                color: 'rgba(48, 209, 88, 0.15)',
+                lineWidth: 1,
+                lineStyle: LineStyle.Dashed,
+                crosshairMarkerVisible: false,
+                lastValueVisible: false,
+                priceLineVisible: false,
+            });
+
+            upperSeries.setData(data.map((d, i) => ({ time: d.time, value: bbData[i]?.upper || null })));
+            lowerSeries.setData(data.map((d, i) => ({ time: d.time, value: bbData[i]?.lower || null })));
+        }
 
         // ZigZag Line
         const zigZagSeries = chart.addLineSeries({
-            color: 'rgba(255, 215, 0, 0.7)',
+            color: 'rgba(255, 215, 0, 0.5)',
             lineWidth: 2,
             lineStyle: LineStyle.Dashed,
             crosshairMarkerVisible: false,
@@ -113,18 +136,6 @@ export const StockChart = ({ data, colors: {
                     { time: level.startTime, value: level.price },
                     { time: lastTime, value: level.price }
                 ]);
-                if (level.label) {
-                    levelSeries.setMarkers([
-                        {
-                            time: lastTime,
-                            position: 'inBar',
-                            color: level.color,
-                            shape: 'circle',
-                            size: 0,
-                            text: `   ${level.label}`,
-                        }
-                    ]);
-                }
             });
         }
 
