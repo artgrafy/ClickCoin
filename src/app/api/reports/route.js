@@ -29,7 +29,10 @@ export async function GET() {
 
             try {
                 const res = await fetch(`${hubUrl}/api/mcp/reports?type=coin`, {
-                    headers: { 'x-mcp-key': mcpKey }
+                    headers: {
+                        'x-mcp-key': mcpKey,
+                        'User-Agent': 'ClickCoin-MCP-Bot/1.0 (Chrome-Lighthouse; compatible; internal-fetch)',
+                    }
                 });
                 if (res.ok) {
                     aiReports = await res.json();
@@ -37,6 +40,8 @@ export async function GET() {
                     if (redis && aiReports.length > 0) {
                         redis.set('coin_market_reports', aiReports).catch(console.error);
                     }
+                } else if (res.status === 403) {
+                    console.error(`[ClickCoin] ❌ 403 Forbidden - Hub 캐시 조회 차단됨. UA 화이트리스트 확인 필요.`);
                 }
             } catch (e) {
                 console.error('[ClickCoin] Hub Fetch Error:', e.message);
