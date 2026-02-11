@@ -27,11 +27,15 @@ export default function Home() {
       setMcpData(null);
       try {
         const res = await fetch(`${API_BASE}/stock/${selectedStock.symbol}`);
-        if (!res.ok) throw new Error('Fetch failed');
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.info || errData.error || `서버 응답 오류 (상태코드: ${res.status})`);
+        }
         const data = await res.json();
         setMcpData(data);
       } catch (err) {
-        setError('데이터 로딩 실패');
+        console.error('Fetch Error:', err);
+        setError(err.message || '데이터를 불러오는 중 오류가 발생했습니다.');
       } finally {
         setLoading(false);
       }
@@ -143,26 +147,48 @@ export default function Home() {
               <div style={{ minHeight: '300px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 <RefreshCw className="loader" size={24} />
               </div>
+            ) : error ? (
+              <div style={{ minHeight: '300px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: '#f23645', gap: '1rem' }}>
+                <XCircle size={48} opacity={0.5} />
+                <p>{error}</p>
+                <button onClick={() => setSelectedStock({ ...selectedStock })} className="scan-btn">다시 시도</button>
+              </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 {mcpData && (
-                  <div style={{ padding: '1rem 1.4rem', background: 'rgba(255,255,255,0.02)', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.92rem', lineHeight: '1.6' }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-                      <span style={{ color: 'var(--accent-green)' }}>AI ANALYSIS:</span>
-                      <span style={{ color: mcpData.trend === 'bullish' ? '#089981' : mcpData.trend === 'bearish' ? '#f23645' : '#d1d4dc' }}>
-                        [{mcpData.trend === 'bullish' ? '강세' : mcpData.trend === 'bearish' ? '약세' : '보합'}]
-                      </span>
-                      <span style={{ opacity: 0.5 }}>(신뢰도 {mcpData.strength}%)</span>
-                      <span style={{ opacity: 0.8 }}>
-                        {(() => {
-                          const hasMSB = mcpData.marketStructure.hasMSB;
-                          const trend = mcpData.trend;
-                          if (hasMSB) return `구조적 변화(MSB) 포착, 추세 변곡점 주의.`;
-                          if (trend === 'bullish') return `상승 모멘텀 유지 중, 안정적 흐름 기대.`;
-                          if (trend === 'bearish') return `하락 압력 우세, 보수적 접근 권고.`;
-                          return `방향성 탐색 중, 주요 가격대 돌파 확인 필요.`;
-                        })()}
-                      </span>
+                  <div style={{ padding: '1.2rem 1.6rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.95rem', lineHeight: '1.7' }}>
+                    <div style={{ color: 'var(--accent-green)', fontWeight: 700, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <TrendingUp size={18} /> AI 전략 브리핑
+                    </div>
+                    <div style={{ color: 'rgba(255,255,255,0.85)' }}>
+                      {(() => {
+                        const { trend, strength, rsi, marketStructure, srLevels } = mcpData;
+                        const trendText = trend === 'bullish' ? '<span style="color:#089981;font-weight:700;">강세</span>' : trend === 'bearish' ? '<span style="color:#f23645;font-weight:700;">약세</span>' : '<span style="color:#d1d4dc;font-weight:700;">중립</span>';
+
+                        let msg = `현재 **${selectedStock.name}**은(는) 전체적으로 ${trendText} 흐름을 보이고 있으며, 분석 신뢰도는 **${strength}%**로 측정됩니다. `;
+
+                        if (marketStructure.hasMSB) {
+                          msg += `차트상에서 최근 **구조적 변화(MSB)**가 포착되었는데, 이는 기존 추세의 힘이 빠지고 새로운 방향성이 결정되는 중요한 변곡점에 와 있음을 의미합니다. `;
+                        } else {
+                          msg += trend === 'bullish' ? `현재 상승 모멘텀이 안정적으로 유지되고 있어 긍정적인 흐름이 기대되는 구간입니다. ` : trend === 'bearish' ? `매도 압력이 우세한 상황이므로 리스크 관리에 집중하며 보수적으로 접근할 필요가 있습니다. ` : `방향성을 탐색하는 횡보 국면으로, 주요 가격대 돌파 전까지는 관망이 유리해 보입니다. `;
+                        }
+
+                        if (rsi > 70) {
+                          msg += `보조지표인 RSI가 **${rsi.toFixed(1)}**로 **과매수** 구간에 진입하여 단기적 가격 조정이나 쉬어가는 흐름에 주의해야 합니다. `;
+                        } else if (rsi < 30) {
+                          msg += `RSI가 **${rsi.toFixed(1)}**로 **과매도** 영역에 머물러 있어, 주요 지지선 근처에서 기술적 반등이 나올 가능성이 높은 시점입니다. `;
+                        } else {
+                          msg += `RSI는 **${rsi.toFixed(1)}**로 중립적인 위치에 있어 급격한 변동보다는 현재의 추세를 이어갈 가능성이 높습니다. `;
+                        }
+
+                        if (srLevels?.length > 0) {
+                          const nearestVal = srLevels[0];
+                          const nearest = nearestVal < 1 ? nearestVal.toFixed(4) : nearestVal.toLocaleString();
+                          msg += `데이터 분석 결과, 현재 시장 참여자들이 가장 강력하게 의식하고 있는 주요 가격대는 **${nearest}**선입니다. 이 구간에서의 지지 여부나 돌파 강도를 확인하며 스윙 전략을 세우시는 것을 추천드립니다.`;
+                        }
+
+                        return <p dangerouslySetInnerHTML={{ __html: msg.replace(/\*\*(.*?)\*\*/g, '<strong style="color:#fff;">$1</strong>') }} />;
+                      })()}
                     </div>
                   </div>
                 )}

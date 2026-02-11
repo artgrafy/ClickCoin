@@ -15,13 +15,35 @@ try {
 
 export async function GET() {
     try {
-        // 1. 서버 저장소(AI) 데이터 가져오기
+        // 1. Redis 캐시 먼저 확인
         let aiReports = [];
         if (redis) {
             aiReports = await redis.get('coin_market_reports') || [];
         }
 
-        // 2. 데이터 병합 (동일 ID 발생 시 로컬 파일보다 AI 생성 데이터를 우선함)
+        // 2. 캐시가 비어있으면 본진 Hub에서 가져오기
+        if (aiReports.length === 0) {
+            console.log('[ClickCoin] Cache Miss. Fetching from Hub...');
+            const hubUrl = (process.env.SUCCESS365_HUB_URL || 'https://success365.kr').replace(/\/$/, '');
+            const mcpKey = process.env.INTERNAL_MCP_API_KEY || 'Success365_Secret_2026_50c4229bf417a672';
+
+            try {
+                const res = await fetch(`${hubUrl}/api/mcp/reports?type=coin`, {
+                    headers: { 'x-mcp-key': mcpKey }
+                });
+                if (res.ok) {
+                    aiReports = await res.json();
+                    // 로컬 Redis에 백필 (비동기)
+                    if (redis && aiReports.length > 0) {
+                        redis.set('coin_market_reports', aiReports).catch(console.error);
+                    }
+                }
+            } catch (e) {
+                console.error('[ClickCoin] Hub Fetch Error:', e.message);
+            }
+        }
+
+        // 3. 로컬 파일(Human) 데이터와 병합
         const combined = [...aiReports];
         const aiIds = new Set(aiReports.map(r => r.id));
 
@@ -31,11 +53,12 @@ export async function GET() {
             }
         });
 
-        // 3. 날짜 역순 정렬
-        const sorted = combined.sort((a, b) => new Date(b.id) - new Date(a.id));
+        // 4. 날짜 역순 정렬
+        const sorted = combined.sort((a, b) => new Date(b.id || b.date) - new Date(a.id || a.date));
 
         return NextResponse.json(sorted);
     } catch (error) {
-        return NextResponse.json(STATIC_REPORTS); // 에러 시 로컬 파일이라도 반환
+        console.error('[ClickCoin Reports API] Error:', error);
+        return NextResponse.json(STATIC_REPORTS);
     }
 }

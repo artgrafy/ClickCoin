@@ -3,8 +3,9 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request, { params }) {
     const { symbol } = await params;
-    const mcpUrl = process.env.MCP_SERVER_URL || 'http://localhost:3000/api/mcp';
-    const mcpKey = process.env.INTERNAL_MCP_API_KEY;
+    let mcpUrl = process.env.MCP_SERVER_URL || 'https://success365.kr/api/mcp/';
+    if (!mcpUrl.endsWith('/')) mcpUrl += '/';
+    const mcpKey = process.env.INTERNAL_MCP_API_KEY || 'Success365_Secret_2026_50c4229bf417a672';
 
     try {
         // 본진 MCP 서버(Success365)에 분석 요청
@@ -24,8 +25,14 @@ export async function GET(request, { params }) {
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`MCP Server Error: ${errorText}`);
+            let errorDetail = '';
+            try {
+                const errJson = await response.json();
+                errorDetail = errJson.details || errJson.error || '';
+            } catch (e) {
+                errorDetail = await response.text();
+            }
+            throw new Error(`MCP Server Error (${response.status}): ${errorDetail}`);
         }
 
         const data = await response.json();
