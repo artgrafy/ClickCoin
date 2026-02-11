@@ -22,7 +22,8 @@ export async function GET() {
 
         // 1. 본진 Hub에 리포트 생성 요청
         // User-Agent 헤더 포함 (cPanel ModSecurity WAF 403 차단 방지)
-        const res = await fetch(`${hubUrl}/api/mcp/reports`, {
+        // trailingSlash: true 대응을 위해 URL 끝에 / 추가
+        const res = await fetch(`${hubUrl}/api/mcp/reports/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

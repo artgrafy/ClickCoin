@@ -28,11 +28,17 @@ export async function GET() {
             const mcpKey = process.env.INTERNAL_MCP_API_KEY || 'Success365_Secret_2026_50c4229bf417a672';
 
             try {
-                const res = await fetch(`${hubUrl}/api/mcp/reports?type=coin`, {
+                // 1. 본진 Hub에 리포트 생성 요청
+                // User-Agent 헤더 포함 (cPanel ModSecurity WAF 403 차단 방지)
+                // trailingSlash: true 대응을 위해 URL 끝에 / 추가
+                const res = await fetch(`${hubUrl}/api/mcp/reports/`, {
+                    method: 'POST',
                     headers: {
+                        'Content-Type': 'application/json',
                         'x-mcp-key': mcpKey,
-                        'User-Agent': 'ClickCoin-MCP-Bot/1.0 (Chrome-Lighthouse; compatible; internal-fetch)',
-                    }
+                        'User-Agent': 'ClickCoin-MCP-Bot/1.0 (Chrome-Lighthouse; compatible; internal-cron)',
+                    },
+                    body: JSON.stringify({ type: 'coin' })
                 });
                 if (res.ok) {
                     aiReports = await res.json();
