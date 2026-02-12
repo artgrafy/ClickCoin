@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 export default function CoinAnalysisClient({ symbol: initialSymbol }) {
     const router = useRouter();
     const [selectedStock, setSelectedStock] = useState(
-        STOCK_LIST.find(s => s.symbol === initialSymbol) || { name: '비트코인', symbol: 'BTC-USD' }
+        STOCK_LIST.find(s => s.symbol === initialSymbol || s.name === initialSymbol) || { name: '비트코인', symbol: 'BTC-USD' }
     );
     const [mcpData, setMcpData] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -25,7 +25,7 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
 
     useEffect(() => {
         if (initialSymbol) {
-            const stock = STOCK_LIST.find(s => s.symbol === initialSymbol);
+            const stock = STOCK_LIST.find(s => s.symbol === initialSymbol || s.name === initialSymbol);
             if (stock && stock.symbol !== selectedStock.symbol) {
                 setSelectedStock(stock);
             }
@@ -88,7 +88,7 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
 
     const handleStockSelect = (stock) => {
         setSelectedStock(stock);
-        router.push(`/${stock.symbol}`);
+        router.push(`/${stock.name}`);
     };
 
     const handleScan = async (type) => {
