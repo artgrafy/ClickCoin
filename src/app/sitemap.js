@@ -1,7 +1,16 @@
 import { MARKET_REPORTS } from '@/lib/reports';
+import { STOCK_LIST } from '@/lib/stocks';
 
 export default function sitemap() {
-    const baseUrl = 'https://clickstock.success365.kr';
+    const baseUrl = 'https://success365.kr/clickcoin';
+
+    // 코인 상세 페이지 주소들
+    const coins = STOCK_LIST.map((coin) => ({
+        url: `${baseUrl}/${coin.symbol}`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.7,
+    }));
 
     // 리포트 상세 페이지 주소들
     const reports = MARKET_REPORTS.map((report) => ({
@@ -18,6 +27,7 @@ export default function sitemap() {
             changeFrequency: 'hourly',
             priority: 1,
         },
+        ...coins,
         ...reports,
     ];
 }
