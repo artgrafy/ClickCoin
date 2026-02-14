@@ -183,7 +183,7 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
                                                 const { trend, strength, rsi, marketStructure, srLevels } = mcpData;
                                                 const trendText = trend === 'bullish' ? '<span style="color:#089981;font-weight:700;">강세</span>' : trend === 'bearish' ? '<span style="color:#f23645;font-weight:700;">약세</span>' : '<span style="color:#d1d4dc;font-weight:700;">중립</span>';
 
-                                                let msg = `현재 **${selectedStock.name}**은(는) 전체적으로 ${trendText} 흐름을 보이고 있으며, 분석 신뢰도는 **${strength}%**로 측정됩니다. `;
+                                                let msg = `현재 **${selectedStock.name}**은(는) 전체적으로 ${trendText} 흐름을 보이고 있으며, AI 진단 강도는 **${strength}%**로 예측됩니다. `;
 
                                                 if (marketStructure.hasMSB) {
                                                     msg += `차트상에서 최근 **구조적 변화(MSB)**가 포착되었는데, 이는 기존 추세의 힘이 빠지고 새로운 방향성이 결정되는 중요한 변곡점에 와 있음을 의미합니다. `;
