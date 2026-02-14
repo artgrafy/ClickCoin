@@ -9,10 +9,10 @@ export async function GET(request, { params }) {
 
     try {
         // 본진 MCP 서버(Success365)에 분석 요청
-        const mcpRequestUrl = `https://success365.kr/api/mcp/?t=${Date.now()}`;
+        const mcpRequestUrl = `https://success365.kr/api/mcp/`;
         const response = await fetch(mcpRequestUrl, {
             method: 'POST',
-            cache: 'no-store', // Next.js fetch 캐시 방지
+            cache: 'default', // Vercel/Next.js 기본 캐시 활용
             headers: {
                 'Content-Type': 'application/json',
                 'x-mcp-key': mcpKey
