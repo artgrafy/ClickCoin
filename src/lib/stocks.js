@@ -8,7 +8,7 @@ export const STOCK_LIST = [
   { symbol: 'TRX-USD', name: '트론' },
   { symbol: 'ADA-USD', name: '에이다' },
   { symbol: 'SHIB-USD', name: '시바이누' },
-  { symbol: 'TON1-USD', name: '톤코인' },
+  { symbol: 'TON11419-USD', name: '톤코인' },
   { symbol: 'DOT-USD', name: '폴카닷' },
   { symbol: 'AVAX-USD', name: '아발란체' },
   { symbol: 'LINK-USD', name: '체인링크' },

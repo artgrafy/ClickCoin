@@ -9,8 +9,10 @@ export async function GET(request, { params }) {
 
     try {
         // 본진 MCP 서버(Success365)에 분석 요청
-        const response = await fetch(mcpUrl, {
+        const mcpRequestUrl = `https://success365.kr/api/mcp/?t=${Date.now()}`;
+        const response = await fetch(mcpRequestUrl, {
             method: 'POST',
+            cache: 'no-store', // Next.js fetch 캐시 방지
             headers: {
                 'Content-Type': 'application/json',
                 'x-mcp-key': mcpKey
@@ -24,18 +26,18 @@ export async function GET(request, { params }) {
             })
         });
 
-        if (!response.ok) {
-            let errorDetail = '';
-            try {
-                const errJson = await response.json();
-                errorDetail = errJson.details || errJson.error || '';
-            } catch (e) {
-                errorDetail = await response.text();
-            }
-            throw new Error(`MCP Server Error (${response.status}): ${errorDetail}`);
+        const responseText = await response.text();
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            data = { error: responseText };
         }
 
-        const data = await response.json();
+        if (!response.ok) {
+            const errorDetail = data.details || data.error || responseText;
+            throw new Error(`MCP Server Error (${response.status}): ${errorDetail}`);
+        }
 
         return NextResponse.json(data.result);
     } catch (error) {

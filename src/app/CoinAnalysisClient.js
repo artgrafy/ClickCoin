@@ -39,12 +39,14 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
             setError(null);
             setMcpData(null);
             try {
-                const res = await fetch(`${API_BASE}/stock/${selectedStock.symbol}`);
+                const res = await fetch(`${API_BASE}/stock/${selectedStock.symbol}?t=${Date.now()}`);
+                const data = await res.json().catch(() => null);
+
                 if (!res.ok) {
-                    const errData = await res.json().catch(() => ({}));
-                    throw new Error(errData.info || errData.error || `서버 응답 오류 (상태코드: ${res.status})`);
+                    throw new Error(data?.info || data?.error || `서버 응답 오류 (상태코드: ${res.status})`);
                 }
-                const data = await res.json();
+
+                if (!data) throw new Error('데이터를 파싱할 수 없습니다.');
                 setMcpData(data);
             } catch (err) {
                 console.error('Fetch Error:', err);
@@ -201,7 +203,16 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
 
                                                 if (srLevels?.length > 0) {
                                                     const nearestVal = srLevels[0];
-                                                    const nearest = nearestVal < 1 ? nearestVal.toFixed(4) : nearestVal.toLocaleString();
+                                                    let nearest;
+                                                    if (nearestVal >= 1000) {
+                                                        nearest = Math.round(nearestVal).toLocaleString();
+                                                    } else if (nearestVal >= 1) {
+                                                        nearest = nearestVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                                    } else if (nearestVal >= 0.1) {
+                                                        nearest = nearestVal.toFixed(4);
+                                                    } else {
+                                                        nearest = nearestVal.toFixed(6);
+                                                    }
                                                     msg += `데이터 분석 결과, 현재 시장 참여자들이 가장 강력하게 의식하고 있는 주요 가격대는 **${nearest}**선입니다. 이 구간에서의 지지 여부나 돌파 강도를 확인하며 스윙 전략을 세우시는 것을 추천드립니다.`;
                                                 }
 
