@@ -3,6 +3,7 @@ import { ArrowLeft, Clock, Tag, BookOpen, TrendingUp, ChevronLeft, ChevronRight 
 import Link from 'next/link';
 import { Redis } from '@upstash/redis';
 import { MARKET_REPORTS as STATIC_REPORTS } from '@/lib/reports';
+import NewsletterForm from '@/components/NewsletterForm';
 
 let redis = null;
 try {
@@ -60,8 +61,9 @@ export default async function ReportPage({ params }) {
 
         if (!isHeading) {
             html = html
-                // 1. 지표형 레이블 사전 처리 (줄바꿈 변환 전 수행)
-                .replace(/(?<=^|\n)\s?([^.!?\n<]*?(분석|심리|지지|저항|시나리오|전략|의견|결론|종합|지표|구조|거래량|캔들|파동|추세|이평선|리스크|목표|손절|참고|기존|현재|대응|관점):)/g, '• <strong>$1</strong>')
+                // 1. 모든 줄 시작 불릿 제거 및 찌꺼기 청소 (멀티라인 대응)
+                .replace(/^\s*([•·∙・●◦‣⁃■□*]\s*)+/gm, '')
+                .replace(/(?<=^|\n)\s*([^.!?\n<]*?(분석|심리|지지|저항|시나리오|전략|의견|결론|종합|지표|구조|거래량|캔들|파동|추세|이평선|리스크|목표|손절|참고|기존|현재|대응|관점):)/gm, '• <strong>$1</strong>')
 
                 // 2. 나열형 리스트 및 문장 강조 정제
                 .replace(/(?<=[.>!?]|^)\s?\*\s?/g, '\n• ')
@@ -74,7 +76,7 @@ export default async function ReportPage({ params }) {
 
             // 4. 중복 여백 및 불릿 정제
             html = html.replace(/(<br\/>){3,}/g, '<br/><br/>')
-                .replace(/<br\/>•/g, '<br/>•')
+                .replace(/([•·∙・●◦‣⁃■□*]\s*){2,}/g, '•')
                 .replace(/^<br\/>/, '');
         }
 
@@ -229,13 +231,42 @@ export default async function ReportPage({ params }) {
                 </div>
             </article>
 
-            <footer style={{ marginTop: '6rem', padding: '3rem', background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
-                <p style={{ opacity: 0.6, fontSize: '0.9rem', lineHeight: 1.8 }}>
-                    본 리포트는 클릭코인의 독자적인 기술 분석 시스템과 전문가의 분석을 바탕으로 작성되었습니다.<br />
-                    모든 투자의 최종 책임은 본인에게 있으며, 본 정보는 참고용으로만 활용하시기 바랍니다.
-                </p>
-                <p style={{ marginTop: '1.5rem', fontSize: '0.8rem', opacity: 0.4 }}>© 2026 ClickCoin Premium Analysis. All rights reserved.</p>
+            {/* Newsletter Subscription */}
+            <section style={{ marginTop: '4rem' }}>
+                <div style={{
+                    background: 'linear-gradient(135deg, rgba(10, 132, 255, 0.1), rgba(94, 92, 230, 0.1))',
+                    textAlign: 'center',
+                    padding: '3.5rem 1.5rem',
+                    border: '1px solid rgba(10, 132, 255, 0.15)',
+                    borderRadius: '24px'
+                }}>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.6rem' }}>코인 리포트를 이메일로 받아보시겠습니까?</h2>
+                    <p style={{ opacity: 0.7, fontSize: '0.95rem', marginBottom: '2rem' }}>
+                        구독 신청 시 매일 발행되는 클릭코인만의 정밀 정보를 보내드립니다.
+                    </p>
+
+                    <NewsletterForm appType="coin" />
+                </div>
+            </section>
+
+            <footer style={{ marginTop: '5rem', padding: '4rem 2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '28px', border: '1px solid rgba(255,255,255,0.05)', textAlign: 'center' }}>
+                <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+                    <p style={{ opacity: 0.6, fontSize: '0.9rem', lineHeight: 1.8, marginBottom: '2rem' }}>
+                        본 리포트는 클릭코인의 독자적인 AI 기술 분석 시스템을 바탕으로 작성되었습니다. <br />
+                        가상자산 투자는 원금 손실 위험이 매우 높으며, 모든 투자의 최종 책임은 투자자 본인에게 있습니다. <br />
+                        제공된 정보는 참고용이며, 어떠한 경우에도 투자 결과에 대한 법적 책임의 근거로 사용될 수 없습니다.
+                    </p>
+
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginBottom: '2rem', fontSize: '0.85rem', fontWeight: 600, opacity: 0.7 }}>
+                        <Link href="/policy" style={{ color: 'inherit', textDecoration: 'none' }}>개인정보처리방침</Link>
+                        <span style={{ opacity: 0.2 }}>|</span>
+                        <a href="mailto:jyoo21c@gmail.com" style={{ color: 'inherit', textDecoration: 'none' }}>운영지원문의</a>
+                    </div>
+
+                    <p style={{ fontSize: '0.8rem', opacity: 0.3 }}>© 2026 ClickCoin Premium Analysis. All rights reserved.</p>
+                </div>
             </footer>
+
         </main >
     );
 }

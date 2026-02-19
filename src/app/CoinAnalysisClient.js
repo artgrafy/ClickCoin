@@ -5,6 +5,7 @@ import { StockChart } from '@/components/StockChart';
 import { Search, TrendingUp, RefreshCw, XCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import NewsletterForm from '@/components/NewsletterForm';
 
 export default function CoinAnalysisClient({ symbol: initialSymbol }) {
     const router = useRouter();
@@ -266,9 +267,46 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
                 </div>
             </section>
 
-            <footer style={{ marginTop: '3rem', paddingBottom: '3rem', textAlign: 'center', opacity: 0.4, fontSize: '0.8rem' }}>
-                <p>© 2026 ClickCoin (Beta). All rights reserved.</p>
+            {/* Newsletter Subscription */}
+            <section className="animate-enter" style={{ marginTop: '4rem' }}>
+                <div className="glass-panel" style={{
+                    background: 'linear-gradient(135deg, rgba(10, 132, 255, 0.1), rgba(94, 92, 230, 0.1))',
+                    textAlign: 'center',
+                    padding: '3.5rem 1.5rem',
+                    border: '1px solid rgba(10, 132, 255, 0.2)',
+                    borderRadius: '24px'
+                }}>
+                    <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: '0.6rem', letterSpacing: '-0.02em' }}>핵심을 보는 당신을 위한 클릭코인</h2>
+                    <p style={{ opacity: 0.7, fontSize: '1rem', marginBottom: '2.5rem' }}>
+                        클릭코인만의 정밀 AI 코인 시황 정보지를 받아보세요.
+                    </p>
+
+                    <NewsletterForm appType="coin" />
+
+                    <p style={{ marginTop: '1.5rem', fontSize: '0.8rem', opacity: 0.4 }}>
+                        스팸 걱정 마세요. 언제든 구독 해지가 가능합니다.
+                    </p>
+                </div>
+            </section>
+
+            <footer style={{ marginTop: '5rem', padding: '4rem 0', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem' }}>
+                <div style={{ maxWidth: '600px', margin: '0 auto', opacity: 0.5, lineHeight: 1.8, marginBottom: '2.5rem' }}>
+                    <p>
+                        ClickCoin은 변동성이 큰 가상자산 시장을 AI 기술로 분석하여 정보를 제공합니다. <br />
+                        당사는 가상자산의 매수나 매도를 권유하지 않으며, <br />
+                        가상자산 투자는 원금 손실 위험이 매우 큼을 인지하시기 바랍니다.
+                    </p>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginBottom: '1.5rem', fontWeight: 600, opacity: 0.6 }}>
+                    <Link href="/policy" style={{ color: 'inherit', textDecoration: 'none' }}>개인정보처리방침</Link>
+                    <span style={{ opacity: 0.2 }}>|</span>
+                    <a href="mailto:jyoo21c@gmail.com" style={{ color: 'inherit', textDecoration: 'none' }}>Contact Info</a>
+                </div>
+
+                <p style={{ opacity: 0.3, letterSpacing: '0.05em' }}>© 2026 ClickCoin (Beta). All rights reserved.</p>
             </footer>
+
 
             <style jsx>{`
         .scan-btn { background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 10px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; alignItems: center; gap: 8px; }

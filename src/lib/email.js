@@ -25,8 +25,9 @@ export async function sendNewsletter(subscribers, report) {
 
         if (!isHeading) {
             html = html
-                // 1. 지표형 레이블 사전 처리 (줄바꿈 변환 전 수행)
-                .replace(/(?<=^|\n)\s?([^.!?\n<]*?(분석|심리|지지|저항|시나리오|전략|의견|결론|종합|지표|구조|거래량|캔들|파동|추세|이평선|리스크|목표|손절|참고|기존|현재|대응|관점):)/g, '• <strong>$1</strong>')
+                // 1. 모든 줄 시작 불릿 제거 및 찌꺼기 청소 (멀티라인 대응)
+                .replace(/^\s*([•·∙・●◦‣⁃■□*]\s*)+/gm, '')
+                .replace(/(?<=^|\n)\s*([^.!?\n<]*?(분석|심리|지지|저항|시나리오|전략|의견|결론|종합|지표|구조|거래량|캔들|파동|추세|이평선|리스크|목표|손절|참고|기존|현재|대응|관점):)/gm, '• <strong>$1</strong>')
 
                 // 2. 나열형 리스트 및 문장 강조 정제
                 .replace(/(?<=[.>!?]|^)\s?\*\s?/g, '\n• ')
@@ -39,7 +40,7 @@ export async function sendNewsletter(subscribers, report) {
 
             // 4. 중복 여백 및 불릿 정제
             html = html.replace(/(<br\/>){3,}/g, '<br/><br/>')
-                .replace(/<br\/>•/g, '<br/>•')
+                .replace(/([•·∙・●◦‣⁃■□*]\s*){2,}/g, '•')
                 .replace(/^<br\/>/, '');
         }
 

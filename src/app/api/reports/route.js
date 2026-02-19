@@ -28,26 +28,24 @@ export async function GET() {
             const mcpKey = process.env.INTERNAL_MCP_API_KEY || 'Success365_Secret_2026_50c4229bf417a672';
 
             try {
-                // 1. 본진 Hub에 리포트 생성 요청
-                // User-Agent 헤더 포함 (cPanel ModSecurity WAF 403 차단 방지)
-                // trailingSlash: true 대응을 위해 URL 끝에 / 추가
-                const res = await fetch(`${hubUrl}/api/mcp/reports/`, {
-                    method: 'POST',
+                // 1. 본진 Hub에서 기존 리포트 목록 가져오기 (GET)
+                const res = await fetch(`${hubUrl}/api/mcp/reports/?type=coin`, {
+                    method: 'GET',
                     headers: {
-                        'Content-Type': 'application/json',
                         'x-mcp-key': mcpKey,
                         'User-Agent': 'ClickCoin-MCP-Bot/1.0 (Chrome-Lighthouse; compatible; internal-cron)',
-                    },
-                    body: JSON.stringify({ type: 'coin' })
+                    }
                 });
+
                 if (res.ok) {
                     aiReports = await res.json();
+                    console.log(`[ClickCoin] Successfully fetched ${aiReports.length} reports from Hub.`);
                     // 로컬 Redis에 백필 (비동기)
                     if (redis && aiReports.length > 0) {
                         redis.set('coin_market_reports', aiReports).catch(console.error);
                     }
-                } else if (res.status === 403) {
-                    console.error(`[ClickCoin] ❌ 403 Forbidden - Hub 캐시 조회 차단됨. UA 화이트리스트 확인 필요.`);
+                } else {
+                    console.error(`[ClickCoin] Hub Fetch Failed: ${res.status}`);
                 }
             } catch (e) {
                 console.error('[ClickCoin] Hub Fetch Error:', e.message);

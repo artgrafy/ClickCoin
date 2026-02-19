@@ -43,10 +43,17 @@ export async function POST(req) {
                 return NextResponse.json({ error: result.error || "구독 서비스 응답 오류" }, { status: response.status });
             }
 
+            if (result.success === false) {
+                return NextResponse.json({
+                    success: false,
+                    message: result.message
+                });
+            }
+
             console.log(`[ClickCoin] Hub Sync Success: ${email}`);
             return NextResponse.json({
                 success: true,
-                message: "구독이 완료되었습니다! 최신 시황 리포트를 보내드릴게요."
+                message: result.message || "구독이 완료되었습니다! 최신 시황 리포트를 보내드릴게요."
             });
 
         } catch (fetchError) {
