@@ -6,6 +6,7 @@ import { Search, TrendingUp, RefreshCw, XCircle, ArrowRight } from 'lucide-react
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import NewsletterForm from '@/components/NewsletterForm';
+import MiniNewsletterForm from '@/components/MiniNewsletterForm';
 
 export default function CoinAnalysisClient({ symbol: initialSymbol }) {
     const router = useRouter();
@@ -122,12 +123,25 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
 
     return (
         <main className="container">
-            <header style={{ paddingTop: '1rem', paddingBottom: '0.4rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <header style={{
+                paddingTop: '1rem',
+                paddingBottom: '0.4rem',
+                borderBottom: '1px solid rgba(255,255,255,0.05)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'between',
+                flexWrap: 'wrap',
+                gap: '20px'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
                     <div style={{ background: 'rgba(255,59,48,0.15)', padding: '10px', borderRadius: '12px' }}>
                         <TrendingUp size={28} color="#FF3B30" />
                     </div>
                     <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0 }}>ClickCoin <span style={{ fontSize: '0.4em', background: 'rgba(255,59,48,0.12)', color: '#FF3B30', padding: '4px 10px', borderRadius: '8px' }}>MCP HUB</span></h1>
+                </div>
+
+                <div className="header-subscribe">
+                    <MiniNewsletterForm appType="coin" />
                 </div>
             </header>
 
