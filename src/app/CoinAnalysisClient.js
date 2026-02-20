@@ -8,6 +8,14 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import NewsletterForm from '@/components/NewsletterForm';
 import MiniNewsletterForm from '@/components/MiniNewsletterForm';
 
+// Global cache for scan results to persist across page navigations within the session
+
+let SCAN_CACHE = {
+    type: null,
+    symbols: null
+};
+
+
 export default function CoinAnalysisClient({ symbol: initialSymbol }) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -25,7 +33,13 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
     const [isScanning, setIsScanning] = useState(false);
     const [scanType, setScanType] = useState(currentFilter);
 
-    const [scannedSymbols, setScannedSymbols] = useState(null);
+    const [scannedSymbols, setScannedSymbols] = useState(() => {
+        if (currentFilter && SCAN_CACHE.type === currentFilter) {
+            return SCAN_CACHE.symbols;
+        }
+        return null;
+    });
+
 
     const API_BASE = '/clickcoin/api';
 
@@ -78,11 +92,8 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
             if (selectedStock && !scannedSymbols.includes(selectedStock.symbol)) {
                 base = [selectedStock, ...base];
             }
-        } else if (currentFilter) {
-            // If recovering filter from URL but data not loaded yet, show only selected stock
-            // to prevent flickering of the full list
-            base = selectedStock ? [selectedStock] : [];
         }
+
 
         if (!search) return base;
         return base.filter(s =>
@@ -126,6 +137,10 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
             const data = await res.json();
             setScannedSymbols(data.symbols);
 
+            // Update global cache
+            SCAN_CACHE = { type, symbols: data.symbols };
+
+
             if (!fromUrl) {
                 const params = new URLSearchParams(searchParams.toString());
                 params.set('filter', type);
@@ -141,6 +156,8 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
     const clearFilter = () => {
         setScannedSymbols(null);
         setScanType(null);
+        SCAN_CACHE = { type: null, symbols: null };
+
         router.replace(pathname, { scroll: false });
     };
 
