@@ -101,12 +101,21 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
         );
     }, [search, scannedSymbols, selectedStock]);
 
-    // Recover filter from URL on mount or URL change
+    // Recover filter from URL on mount or URL change (back/forward navigation)
     useEffect(() => {
-        if (currentFilter && scannedSymbols === null && !isScanning) {
-            handleScan(currentFilter, true);
+        if (currentFilter !== scanType && !isScanning) {
+            if (currentFilter) {
+                // URL has a filter that doesn't match our state
+                handleScan(currentFilter, true);
+            } else if (scanType !== null) {
+                // URL has no filter but our state does (e.g. back button)
+                setScannedSymbols(null);
+                setScanType(null);
+                SCAN_CACHE = { type: null, symbols: null };
+            }
         }
-    }, [currentFilter, scannedSymbols, isScanning]);
+    }, [currentFilter]);
+
 
 
     useEffect(() => {
