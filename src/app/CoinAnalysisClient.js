@@ -190,7 +190,9 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
                     <div style={{ background: 'rgba(255,59,48,0.15)', padding: '10px', borderRadius: '12px' }}>
                         <TrendingUp size={28} color="#FF3B30" />
                     </div>
-                    <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0 }}>ClickCoin <span style={{ fontSize: '0.4em', background: 'rgba(255,59,48,0.12)', color: '#FF3B30', padding: '4px 10px', borderRadius: '8px' }}>MCP HUB</span></h1>
+                    <Link href="/" onClick={clearFilter} style={{ textDecoration: 'none', color: 'inherit' }}>
+                        <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0, cursor: 'pointer' }}>ClickCoin <span style={{ fontSize: '0.4em', background: 'rgba(255,59,48,0.12)', color: '#FF3B30', padding: '4px 10px', borderRadius: '8px' }}>MCP HUB</span></h1>
+                    </Link>
                 </div>
 
                 <div className="header-subscribe">
