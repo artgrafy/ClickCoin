@@ -186,13 +186,13 @@ export function calculateZigZag(data, depth = 3) {
     markers.sort((a, b) => (a.time < b.time ? -1 : 1));
 
     // 최근 신호 여부
-    let hasRecentBullishMSB = false;
-    let hasRecentBearishMSB = false;
-    if (data.length >= 3) {
-        const threshold = data[data.length - 3].time;
-        hasRecentBullishMSB = markers.some(m => m.text.includes('Buy') && m.time >= threshold);
-        hasRecentBearishMSB = markers.some(m => m.text.includes('Sell') && m.time >= threshold);
+    // 최근 2봉 이내에 MSB 발생 여부 판단 (차트 마커 텍스트가 아닌 실제 이벤트 데이터 기반)
+    if (data.length >= 2) {
+        const threshold = data[data.length - 2].time;
+        hasRecentBullishMSB = allMsbTimes.some(m => m.type === 'bull' && m.time >= threshold);
+        hasRecentBearishMSB = allMsbTimes.some(m => m.type === 'bear' && m.time >= threshold);
     }
+
 
     // 5. 지지선 로직
     const keyLevels = [];
