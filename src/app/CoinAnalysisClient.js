@@ -88,11 +88,8 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
         let base = STOCK_LIST;
         if (scannedSymbols !== null) {
             base = STOCK_LIST.filter(s => scannedSymbols.includes(s.symbol));
-            // Ensure selected coin is always in the list even if not in scan results
-            if (selectedStock && !scannedSymbols.includes(selectedStock.symbol)) {
-                base = [selectedStock, ...base];
-            }
         }
+
 
 
         if (!search) return base;
