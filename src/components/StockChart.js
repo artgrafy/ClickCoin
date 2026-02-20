@@ -142,11 +142,16 @@ export const StockChart = ({ data, stockName, colors: {
             })));
         }
 
-        // 지표 필드 연동 (FVG, OB 등은 본진 결과 기반으로 캐시)
+        // 지표 필드 연동 (FVG, OB, MSB Lines 전용 드로잉 매핑)
         smcData.current = {
             fvgs: data.fvgs || [],
             obs: data.orderBlocks || [],
-            msbLines: [], // 차후 서버에서 지원 시 추가
+            msbLines: (data.msbLines || data.marketStructure?.msbLines || []).map(l => ({
+                start: l.start.time,
+                end: l.end.time,
+                level: l.start.price,
+                type: l.type
+            })),
             srLevels: srLevels
         };
 
