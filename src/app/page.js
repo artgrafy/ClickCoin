@@ -1,4 +1,6 @@
+import { Suspense } from 'react';
 import CoinAnalysisClient from './CoinAnalysisClient';
+
 
 export const metadata = {
   title: "ClickCoin (Beta) - 오늘의 코인",
@@ -7,5 +9,10 @@ export const metadata = {
 
 export default function Home() {
   // Default symbol for the root page
-  return <CoinAnalysisClient symbol="BTC-USD" />;
+  return (
+    <Suspense fallback={null}>
+      <CoinAnalysisClient symbol="BTC-USD" />
+    </Suspense>
+  );
 }
+

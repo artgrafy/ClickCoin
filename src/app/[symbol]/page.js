@@ -1,4 +1,6 @@
+import { Suspense } from 'react';
 import CoinAnalysisClient from '../CoinAnalysisClient';
+
 import { STOCK_LIST } from '@/lib/stocks';
 
 export async function generateMetadata({ params }) {
@@ -79,7 +81,10 @@ export default async function Page({ params }) {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
             />
-            <CoinAnalysisClient symbol={finalSymbol} />
+            <Suspense fallback={null}>
+                <CoinAnalysisClient symbol={finalSymbol} />
+            </Suspense>
+
         </>
     );
 }
