@@ -31,24 +31,32 @@ async function getStockData(symbol) {
             interval: '1d',
         });
 
-        if (!result || result.length < 2) return null;
-
-        const latest = result[result.length - 1];
-        const prev = result[result.length - 2];
-
-        const changePercent = ((latest.close - prev.close) / prev.close) * 100;
-        const volume = latest.volume;
-        const value = latest.close * latest.volume; // 거래대금
-
-        // MSB 분석 수행 (최근 2봉 기준)
-        const zigZag = calculateZigZag(result.map(d => ({
+        // 데이터 정제 및 오늘 봉 삭제 (본진 Hub 서버와 동기화)
+        let candles = result.map(d => ({
             time: d.date.toISOString().split('T')[0],
             open: d.open,
             high: d.high,
             low: d.low,
             close: d.close,
             volume: d.volume
-        })));
+        }));
+
+        const todayKST = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0];
+        if (candles.length > 0 && candles[candles.length - 1].time === todayKST) {
+            candles = candles.slice(0, -1);
+        }
+
+        if (candles.length < 2) return null;
+
+        const latest = candles[candles.length - 1];
+        const prev = candles[candles.length - 2];
+
+        const changePercent = ((latest.close - prev.close) / prev.close) * 100;
+        const volume = latest.volume;
+        const value = latest.close * latest.volume; // 거래대금
+
+        // MSB 분석 수행 (최근 2봉 기준)
+        const zigZag = calculateZigZag(candles);
 
         return {
             symbol,

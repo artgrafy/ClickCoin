@@ -130,108 +130,31 @@ export const StockChart = ({ data, stockName, colors: {
 
         const zigzagSeries = chart.addLineSeries({ color: 'rgba(255, 215, 0, 0.4)', lineWidth: 1, lineStyle: LineStyle.Dashed, priceLineVisible: false, lastPriceLineVisible: false });
 
-        const calculateSMC = (candles) => {
-            const points = [], fvgs = [], obs = [], msbLines = [];
-            let lastType = null, lastH = null, lastL = null;
-            const depth = candles.length > 50 ? 10 : 5;
-            for (let i = 2; i < candles.length - depth; i++) {
-                const cP2 = candles[i - 2], cP1 = candles[i - 1], cC = candles[i];
-                if (cP2.high < cC.low) {
-                    let m = false; for (let k = i + 1; k < candles.length; k++) if (candles[k].low < cC.low) { m = true; break; }
-                    if (!m) fvgs.push({ type: 'bullish', top: cC.low, bottom: cP2.high, time: cP1.time });
-                } else if (cP2.low > cC.high) {
-                    let m = false; for (let k = i + 1; k < candles.length; k++) if (candles[k].high > cC.high) { m = true; break; }
-                    if (!m) fvgs.push({ type: 'bearish', top: cP2.low, bottom: cC.high, time: cP1.time });
-                }
-                if (i >= depth) {
-                    let isH = true, isL = true;
-                    for (let j = 1; j <= depth; j++) {
-                        if (candles[i - j].high > candles[i].high || (i + j < candles.length && candles[i + j].high > candles[i].high)) isH = false;
-                        if (candles[i - j].low < candles[i].low || (i + j < candles.length && candles[i + j].low < candles[i].low)) isL = false;
-                    }
-                    if (isH) {
-                        const val = candles[i].high; const lbl = lastH === null ? 'H' : (val > lastH ? 'HH' : 'LH');
-                        if (lastType === 'H') { if (val > points[points.length - 1].value) points[points.length - 1] = { time: candles[i].time, value: val, type: 'H', label: lbl, index: i }; }
-                        else { points.push({ time: candles[i].time, value: val, type: 'H', label: lbl, index: i }); lastType = 'H'; }
-                        lastH = val;
-                    } else if (isL) {
-                        const val = candles[i].low; const lbl = lastL === null ? 'L' : (val < lastL ? 'LL' : 'HL');
-                        if (lastType === 'L') { if (val < points[points.length - 1].value) points[points.length - 1] = { time: candles[i].time, value: val, type: 'L', label: lbl, index: i }; }
-                        else { points.push({ time: candles[i].time, value: val, type: 'L', label: lbl, index: i }); lastType = 'L'; }
-                        lastL = val;
-                    }
-                }
-            }
-            const markers = []; let activeLH = null, activeHL = null, lhIdx = -1, hlIdx = -1, lhTime = null, hlTime = null;
-            points.forEach((p, idx) => {
-                markers.push({ time: p.time, position: p.type === 'H' ? 'aboveBar' : 'belowBar', color: '#FFD700', shape: 'none', text: p.label, size: 0 });
-                if (p.label === 'LH') { activeLH = p.value; lhIdx = p.index; lhTime = p.time; }
-                if (p.label === 'HL') { activeHL = p.value; hlIdx = p.index; hlTime = p.time; }
-                const end = idx < points.length - 1 ? points[idx + 1].index : candles.length;
-                for (let k = p.index + 1; k < end; k++) {
-                    const c = candles[k];
-                    if (activeLH && c.close > activeLH) {
-                        markers.push({ time: c.time, position: 'belowBar', color: '#3b82f6', shape: 'arrowUp', text: 'MSB', size: 1.5 });
-                        msbLines.push({ start: lhTime, end: c.time, level: activeLH, type: 'bullish' });
-                        let rx = k, mv = c.low; for (let n = k; n >= lhIdx; n--) if (candles[n].low < mv) { mv = candles[n].low; rx = n; }
-                        for (let n = rx; n >= Math.max(0, rx - 5); n--) if (candles[n].close < candles[n].open) { obs.push({ type: 'bullish', top: candles[n].open, bottom: candles[n].close, time: candles[n].time }); break; }
-                        activeLH = null;
-                    }
-                    if (activeHL && c.close < activeHL) {
-                        markers.push({ time: c.time, position: 'aboveBar', color: '#f59e0b', shape: 'arrowDown', text: 'MSB', size: 1.5 });
-                        msbLines.push({ start: hlTime, end: c.time, level: activeHL, type: 'bearish' });
-                        let rx = k, xv = c.high; for (let n = k; n >= hlIdx; n--) if (candles[n].high > xv) { xv = candles[n].high; rx = n; }
-                        for (let n = rx; n >= Math.max(0, rx - 5); n--) if (candles[n].close > candles[n].open) { obs.push({ type: 'bearish', top: candles[n].close, bottom: candles[n].open, time: candles[n].time }); break; }
-                        activeHL = null;
-                    }
-                }
-            });
+        // SMC 분석 (이제 본진 서버가 계산한 결과를 그대로 사용)
+        const markers = data.markers || [];
+        const srLevels = data.srLevels || [];
 
-            // S/R Levels (Swing Trader Optimized: 150봉 분석, 60봉 가중치 3배)
-            const lastIdx = candles.length - 1;
-            const currentPrice = candles[lastIdx].close;
-            const lookback = 150, recentLimit = 60;
+        // 지그재그 선 (본진의 points 데이터를 활용)
+        if (data.marketStructure?.points) {
+            zigzagSeries.setData(data.marketStructure.points.map(p => ({
+                time: p.time,
+                value: p.price
+            })));
+        }
 
-            const candidates = [];
-            // 피벗 포인트 가중치
-            points.forEach(p => {
-                if (p.index > lastIdx - lookback) {
-                    candidates.push({ val: p.value, weight: (p.index > lastIdx - recentLimit ? 3 : 1) });
-                }
-            });
-            // OB 가중치
-            obs.forEach(o => {
-                const oIdx = candles.findIndex(c => c.time === o.time);
-                if (oIdx > lastIdx - lookback) {
-                    candidates.push({ val: (o.top + o.bottom) / 2, weight: (oIdx > lastIdx - recentLimit ? 3 : 1) });
-                }
-            });
-
-            const srLevels = [];
-            if (candidates.length > 0) {
-                const threshold = currentPrice * 0.005;
-                const clusters = [];
-                candidates.forEach(cnd => {
-                    let found = false;
-                    for (let c of clusters) { if (Math.abs(c.price - cnd.val) < threshold) { c.score += cnd.weight; c.sum += cnd.val; c.count++; c.price = c.sum / c.count; found = true; break; } }
-                    if (!found) clusters.push({ price: cnd.val, score: cnd.weight, sum: cnd.val, count: 1 });
-                });
-                // 현재가 +-20% 이내 강력한 라인 3개
-                srLevels.push(...clusters
-                    .filter(c => Math.abs(c.price - currentPrice) / currentPrice < 0.2)
-                    .sort((a, b) => b.score - a.score).slice(0, 3).map(c => c.price)
-                );
-            }
-            return { points, markers, fvgs, obs, msbLines, srLevels };
+        // 지표 필드 연동 (FVG, OB 등은 본진 결과 기반으로 캐시)
+        smcData.current = {
+            fvgs: data.fvgs || [],
+            obs: data.orderBlocks || [],
+            msbLines: [], // 차후 서버에서 지원 시 추가
+            srLevels: srLevels
         };
 
-        const smc = calculateSMC(cleanCandles);
-        smcData.current = { fvgs: smc.fvgs, obs: smc.obs, msbLines: smc.msbLines, srLevels: smc.srLevels };
-        zigzagSeries.setData(smc.points.map(p => ({ time: p.time, value: p.value })));
-        candlestickSeries.setMarkers(smc.markers.sort((a, b) => (a.time > b.time ? 1 : -1)));
+        // 서버 마커 출력 (HH/LL/MSB 등 모든 시각적 요소가 여기에 포함됨)
+        candlestickSeries.setMarkers(markers.sort((a, b) => (a.time > b.time ? 1 : -1)));
 
-        // S/R Levels
-        smc.srLevels.forEach(lvl => {
+        // S/R Levels (지지/저항선) 출력
+        srLevels.forEach(lvl => {
             candlestickSeries.createPriceLine({
                 price: lvl,
                 color: 'rgba(255, 255, 255, 0.25)',
