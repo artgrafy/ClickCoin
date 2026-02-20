@@ -130,9 +130,9 @@ export const StockChart = ({ data, stockName, colors: {
 
         const zigzagSeries = chart.addLineSeries({ color: 'rgba(255, 215, 0, 0.4)', lineWidth: 1, lineStyle: LineStyle.Dashed, priceLineVisible: false, lastPriceLineVisible: false });
 
-        // SMC 분석 (이제 본진 서버가 계산한 결과를 그대로 사용)
-        const markers = data.markers || [];
-        const srLevels = data.srLevels || [];
+        // SMC 분석 (본진 서버 응답 규격에 맞춰 markers 탐색)
+        const markers = data.markers || data.marketStructure?.markers || [];
+        const srLevels = data.srLevels || data.marketStructure?.srLevels || [];
 
         // 지그재그 선 (본진의 points 데이터를 활용)
         if (data.marketStructure?.points) {
