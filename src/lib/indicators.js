@@ -53,95 +53,90 @@ export function calculateBB(data, period = 20, multiplier = 2) {
 }
 
 export function calculateZigZag(data, providedDepth) {
-    // 0. 데이터 정제 (차트와 동일하게 Flat candle 및 무의미 데이터 제거)
-    const cleanData = data.filter(c => {
+    // 0. 데이터 정합성 (차트와 동일하게 Flat candle 및 무의미 데이터 제거)
+    const candles = data.filter(c => {
         const isFlat = Number(c.open) === Number(c.close) && Number(c.high) === Number(c.low);
         return !isFlat && Number(c.close) > 0;
     });
 
-    if (cleanData.length < 20) return { hasRecentBullishMSB: false, hasRecentBearishMSB: false, markers: [], lineData: [], keyLevels: [] };
+    if (candles.length < 20) return { hasRecentBullishMSB: false, hasRecentBearishMSB: false, markers: [], lineData: [], keyLevels: [] };
 
-    const depth = providedDepth || (cleanData.length > 50 ? 10 : 5);
-    const points = [];
+    // 1. 설정 (차트와 동일한 깊이 계산)
+    const depth = providedDepth || (candles.length > 50 ? 10 : 5);
+    const points = [], fvgs = [], obs = [], msbLines = [];
     let lastType = null, lastH = null, lastL = null;
 
-    // 1. Pivot Points (차트와 동일한 연산자 및 루프 적용)
-    for (let i = depth; i < cleanData.length - depth; i++) {
-        let isH = true, isL = true;
-        for (let j = 1; j <= depth; j++) {
-            if (cleanData[i - j].high > cleanData[i].high || (i + j < cleanData.length && cleanData[i + j].high > cleanData[i].high)) isH = false;
-            if (cleanData[i - j].low < cleanData[i].low || (i + j < cleanData.length && cleanData[i + j].low < cleanData[i].low)) isL = false;
-        }
-
-        if (isH) {
-            const val = cleanData[i].high;
-            const label = lastH === null ? 'H' : (val > lastH ? 'HH' : 'LH');
-            if (lastType === 'H') {
-                if (val > points[points.length - 1].value) points[points.length - 1] = { time: cleanData[i].time, value: val, type: 'H', label, index: i };
-            } else {
-                points.push({ time: cleanData[i].time, value: val, type: 'H', label, index: i });
-                lastType = 'H';
+    // 2. 파동 분석 (SMC: Pivot Points)
+    for (let i = 2; i < candles.length - depth; i++) {
+        if (i >= depth) {
+            let isH = true, isL = true;
+            for (let j = 1; j <= depth; j++) {
+                if (candles[i - j].high > candles[i].high || (i + j < candles.length && candles[i + j].high > candles[i].high)) isH = false;
+                if (candles[i - j].low < candles[i].low || (i + j < candles.length && candles[i + j].low < candles[i].low)) isL = false;
             }
-            lastH = val;
-        } else if (isL) {
-            const val = cleanData[i].low;
-            const label = lastL === null ? 'L' : (val < lastL ? 'LL' : 'HL');
-            if (lastType === 'L') {
-                if (val < points[points.length - 1].value) points[points.length - 1] = { time: cleanData[i].time, value: val, type: 'L', label, index: i };
-            } else {
-                points.push({ time: cleanData[i].time, value: val, type: 'L', label, index: i });
-                lastType = 'L';
+            if (isH) {
+                const val = candles[i].high; const lbl = lastH === null ? 'H' : (val > lastH ? 'HH' : 'LH');
+                if (lastType === 'H') { if (val > points[points.length - 1].value) points[points.length - 1] = { time: candles[i].time, value: val, type: 'H', label: lbl, index: i }; }
+                else { points.push({ time: candles[i].time, value: val, type: 'H', label: lbl, index: i }); lastType = 'H'; }
+                lastH = val;
+            } else if (isL) {
+                const val = candles[i].low; const lbl = lastL === null ? 'L' : (val < lastL ? 'LL' : 'HL');
+                if (lastType === 'L') { if (val < points[points.length - 1].value) points[points.length - 1] = { time: candles[i].time, value: val, type: 'L', label: lbl, index: i }; }
+                else { points.push({ time: candles[i].time, value: val, type: 'L', label: lbl, index: i }); lastType = 'L'; }
+                lastL = val;
             }
-            lastL = val;
         }
     }
 
-    // 2. MSB 판단 (차트와 동일한 추적 로직)
+    // 3. 구조적 변화 추적 (SMC: MSB & OB)
     const markers = [];
     const allMsbTimes = [];
     let activeLH = null, activeHL = null, lhTime = null, hlTime = null;
 
     points.forEach((p, idx) => {
+        markers.push({ time: p.time, position: p.type === 'H' ? 'aboveBar' : 'belowBar', text: p.label, size: 0 });
+
         if (p.label === 'LH') { activeLH = p.value; lhTime = p.time; }
         if (p.label === 'HL') { activeHL = p.value; hlTime = p.time; }
 
-        const nextPointIdx = idx < points.length - 1 ? points[idx + 1].index : cleanData.length;
-        for (let k = p.index + 1; k < nextPointIdx; k++) {
-            const c = cleanData[k];
+        const end = idx < points.length - 1 ? points[idx + 1].index : candles.length;
+        for (let k = p.index + 1; k < end; k++) {
+            const c = candles[k];
+
             if (activeLH && c.close > activeLH) {
                 allMsbTimes.push({ time: c.time, type: 'bull' });
-                markers.push({ time: c.time, text: 'MSB(Bull)' });
+                markers.push({ time: c.time, position: 'belowBar', color: '#3b82f6', shape: 'arrowUp', text: 'MSB', size: 1.5 });
                 activeLH = null;
             }
+
             if (activeHL && c.close < activeHL) {
                 allMsbTimes.push({ time: c.time, type: 'bear' });
-                markers.push({ time: c.time, text: 'MSB(Bear)' });
+                markers.push({ time: c.time, position: 'aboveBar', color: '#f59e0b', shape: 'arrowDown', text: 'MSB', size: 1.5 });
                 activeHL = null;
             }
         }
     });
 
-    // 3. 결과 판정 (최근 2봉)
+    // 4. 결과 판정 (최근 2봉 내 발생 여부)
     let hasRecentBullishMSB = false;
     let hasRecentBearishMSB = false;
-    if (cleanData.length >= 2) {
-        const threshold = cleanData[cleanData.length - 2].time;
+    if (candles.length >= 2) {
+        const threshold = candles[candles.length - 2].time;
         hasRecentBullishMSB = allMsbTimes.some(m => m.type === 'bull' && m.time >= threshold);
         hasRecentBearishMSB = allMsbTimes.some(m => m.type === 'bear' && m.time >= threshold);
     }
 
-    // 분석 텍스트 생성 (최소한의 호환성 유지)
-    const rsiData = calculateRSI(cleanData);
+    const rsiData = calculateRSI(candles);
     const lastRsi = rsiData[rsiData.length - 1];
     let analysis = {
-        summary: hasRecentBullishMSB ? "강력 매수 신호 포착" : hasRecentBearishMSB ? "단기 매도 전략 권고" : "분석 중...",
-        detail: `현재 RSI는 ${lastRsi?.toFixed(1) || 'N/A'}입니다.`,
+        summary: hasRecentBullishMSB ? "강력 매수 신호 포착" : hasRecentBearishMSB ? "단기 매도 전략 권고" : "중립 구간 분석 중",
+        detail: `최신 RSI 수치는 ${lastRsi?.toFixed(1) || 'N/A'}으로 측정되었습니다.`,
         sentiment: hasRecentBullishMSB ? "bullish" : hasRecentBearishMSB ? "bearish" : "neutral"
     };
 
     return {
         lineData: points.map(p => ({ time: p.time, value: p.value })),
-        markers,
+        markers: markers.sort((a, b) => (a.time > b.time ? 1 : -1)),
         keyLevels: [],
         hasRecentBullishMSB,
         hasRecentBearishMSB,
