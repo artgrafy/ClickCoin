@@ -23,7 +23,7 @@ function getMarketStatus() {
     return { ttl: 60 * 60 * 12 }; // 코인은 상시 12시간 유지
 }
 
-async function getStockData(symbol) {
+async function getStockData(symbol, hubResult = null) {
     try {
         const result = await yahooFinance.historical(symbol, {
             period1: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 정확한 구조 파악을 위해 1년치 데이터 확보
@@ -55,15 +55,22 @@ async function getStockData(symbol) {
         const volume = latest.volume;
         const value = latest.close * latest.volume; // 거래대금
 
-        // MSB 분석 수행 (최근 2봉 기준)
-        const zigZag = calculateZigZag(candles);
+        // MSB 판정 (본진 데이터가 있으면 본진 기준, 없으면 로컬 로직 fallback)
+        let hasMSB = false;
+        if (hubResult?.marketStructure) {
+            hasMSB = hubResult.marketStructure.hasMSB;
+        } else {
+            // 본진 데이터가 아직 캐싱되지 않은 경우에만 로컬 계산 수행
+            const zigZag = calculateZigZag(candles);
+            hasMSB = zigZag.hasRecentBullishMSB || zigZag.hasRecentBearishMSB;
+        }
 
         return {
             symbol,
             changePercent,
             volume,
             value,
-            hasMSB: zigZag.hasRecentBullishMSB || zigZag.hasRecentBearishMSB
+            hasMSB
         };
     } catch (e) {
         return null;
@@ -72,8 +79,8 @@ async function getStockData(symbol) {
 
 export async function GET(req) {
     const { searchParams } = new URL(req.url);
-    const type = searchParams.get('type') || 'rising'; // 기본값 상승순
-    const cacheKey = `coin_scan_results_${type}`;
+    const type = searchParams.get('type') || 'rising';
+    const cacheKey = `coin_scan_results_v2_${type}`; // 캐시 버전업
 
     // 1. Check Redis Cache
     if (redis) {
@@ -92,14 +99,34 @@ export async function GET(req) {
         }
     }
 
-    // 2. Fresh Scan (모든 종목 데이터 수집)
+    // 2. Fresh Scan
     const allData = [];
     const chunkSize = 12;
+
+    // 본진 배치 분석 데이터 미리 가져오기 (마커/MSB 데이터 동기화)
+    let hubBatchData = {};
+    try {
+        const mcpKey = process.env.INTERNAL_MCP_API_KEY || 'Success365_Secret_2026_50c4229bf417a672';
+        const hubRes = await fetch('https://success365.kr/api/mcp/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-mcp-key': mcpKey },
+            body: JSON.stringify({
+                tool: 'get_batch_status',
+                params: { symbols: STOCK_LIST.map(s => s.symbol), isCoin: true }
+            })
+        });
+        if (hubRes.ok) {
+            const data = await hubRes.json();
+            hubBatchData = data.result || {};
+        }
+    } catch (e) {
+        console.error("Hub Batch Fetch Error:", e);
+    }
 
     try {
         for (let i = 0; i < STOCK_LIST.length; i += chunkSize) {
             const chunk = STOCK_LIST.slice(i, i + chunkSize);
-            const promises = chunk.map(stock => getStockData(stock.symbol));
+            const promises = chunk.map(stock => getStockData(stock.symbol, hubBatchData[stock.symbol]));
             const results = await Promise.all(promises);
             results.forEach(res => {
                 if (res) allData.push(res);
