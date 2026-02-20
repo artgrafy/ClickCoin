@@ -31,7 +31,7 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
     const [reports, setReports] = useState([]);
     const [visibleCount, setVisibleCount] = useState(6);
     const [isScanning, setIsScanning] = useState(false);
-    const [scanType, setScanType] = useState(currentFilter);
+    const [scanType, setScanType] = useState(null);
 
     const [scannedSymbols, setScannedSymbols] = useState(() => {
         if (currentFilter && SCAN_CACHE.type === currentFilter) {
