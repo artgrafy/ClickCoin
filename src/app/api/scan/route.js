@@ -17,10 +17,10 @@ try {
 } catch (e) { }
 
 /**
- * 코인 시장(24/7) 상태와 캐시 만료 시간을 계산합니다.
+ * 본진(Success365) Hub 서버의 코인 분석 주기와 동기화된 TTL을 계산합니다.
  */
 function getMarketStatus() {
-    return { isMarketOpen: true, ttl: 1800 };
+    return { ttl: 60 * 60 * 12 }; // 코인은 상시 12시간 유지
 }
 
 async function getStockData(symbol) {
