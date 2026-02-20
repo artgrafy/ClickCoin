@@ -4,12 +4,15 @@ import { STOCK_LIST } from '@/lib/stocks';
 import { StockChart } from '@/components/StockChart';
 import { Search, TrendingUp, RefreshCw, XCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import NewsletterForm from '@/components/NewsletterForm';
 import MiniNewsletterForm from '@/components/MiniNewsletterForm';
 
 export default function CoinAnalysisClient({ symbol: initialSymbol }) {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
+    const currentFilter = searchParams.get('filter');
     const [selectedStock, setSelectedStock] = useState(
         STOCK_LIST.find(s => s.symbol === initialSymbol || s.name === initialSymbol) || { name: '비트코인', symbol: 'BTC-USD' }
     );
@@ -70,12 +73,23 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
         let base = STOCK_LIST;
         if (scannedSymbols !== null) {
             base = STOCK_LIST.filter(s => scannedSymbols.includes(s.symbol));
+            // Ensure selected coin is always in the list even if not in scan results
+            if (selectedStock && !scannedSymbols.includes(selectedStock.symbol)) {
+                base = [selectedStock, ...base];
+            }
         }
         if (!search) return base;
         return base.filter(s =>
             s.name.includes(search) || s.symbol.includes(search.toUpperCase())
         );
-    }, [search, scannedSymbols]);
+    }, [search, scannedSymbols, selectedStock]);
+
+    // Recover filter from URL on mount or URL change
+    useEffect(() => {
+        if (currentFilter && currentFilter !== scanType && !isScanning) {
+            handleScan(currentFilter, true);
+        }
+    }, [currentFilter]);
 
     useEffect(() => {
         async function fetchReports() {
@@ -92,16 +106,24 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
 
     const handleStockSelect = (stock) => {
         setSelectedStock(stock);
-        router.push(`/${stock.name}`);
+        const params = new URLSearchParams(searchParams.toString());
+        router.push(`/${encodeURIComponent(stock.name)}?${params.toString()}`);
     };
 
-    const handleScan = async (type) => {
+    const handleScan = async (type, fromUrl = false) => {
+        if (type === scanType && scannedSymbols !== null) return;
         setIsScanning(true);
         setScanType(type);
         try {
             const res = await fetch(`${API_BASE}/scan?type=${type}`);
             const data = await res.json();
             setScannedSymbols(data.symbols);
+
+            if (!fromUrl) {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set('filter', type);
+                router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+            }
         } catch (e) {
             alert('스캔 실패');
         } finally {
@@ -112,6 +134,7 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
     const clearFilter = () => {
         setScannedSymbols(null);
         setScanType(null);
+        router.replace(pathname, { scroll: false });
     };
 
     const formatReportDate = (report) => {
