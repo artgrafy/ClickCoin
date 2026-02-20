@@ -191,7 +191,12 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
                         <TrendingUp size={28} color="#FF3B30" />
                     </div>
                     <Link href="/" onClick={clearFilter} style={{ textDecoration: 'none', color: 'inherit' }}>
-                        <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0, cursor: 'pointer' }}>ClickCoin <span style={{ fontSize: '0.4em', background: 'rgba(255,59,48,0.12)', color: '#FF3B30', padding: '4px 10px', borderRadius: '8px' }}>MCP HUB</span></h1>
+                        <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            ClickCoin
+                            <a href="https://success365.kr/clickstock" style={{ fontSize: '0.4em', background: 'rgba(255,59,48,0.12)', color: '#FF3B30', padding: '4px 12px', borderRadius: '8px', textDecoration: 'none', transition: 'all 0.2s' }} className="hover:bg-[rgba(255,59,48,0.2)]">
+                                Go To ClickStock
+                            </a>
+                        </h1>
                     </Link>
                 </div>
 
