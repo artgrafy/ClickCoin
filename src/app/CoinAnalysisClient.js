@@ -23,7 +23,8 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
     const [reports, setReports] = useState([]);
     const [visibleCount, setVisibleCount] = useState(6);
     const [isScanning, setIsScanning] = useState(false);
-    const [scanType, setScanType] = useState(null);
+    const [scanType, setScanType] = useState(currentFilter);
+
     const [scannedSymbols, setScannedSymbols] = useState(null);
 
     const API_BASE = '/clickcoin/api';
@@ -77,7 +78,12 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
             if (selectedStock && !scannedSymbols.includes(selectedStock.symbol)) {
                 base = [selectedStock, ...base];
             }
+        } else if (currentFilter) {
+            // If recovering filter from URL but data not loaded yet, show only selected stock
+            // to prevent flickering of the full list
+            base = selectedStock ? [selectedStock] : [];
         }
+
         if (!search) return base;
         return base.filter(s =>
             s.name.includes(search) || s.symbol.includes(search.toUpperCase())
