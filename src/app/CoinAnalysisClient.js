@@ -92,10 +92,11 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
 
     // Recover filter from URL on mount or URL change
     useEffect(() => {
-        if (currentFilter && currentFilter !== scanType && !isScanning) {
+        if (currentFilter && scannedSymbols === null && !isScanning) {
             handleScan(currentFilter, true);
         }
-    }, [currentFilter]);
+    }, [currentFilter, scannedSymbols, isScanning]);
+
 
     useEffect(() => {
         async function fetchReports() {
