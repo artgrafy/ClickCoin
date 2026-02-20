@@ -148,9 +148,10 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.6rem' }}>
                 <section className="glass-panel">
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
-                        <button onClick={() => handleScan('popular')} disabled={isScanning} className={`scan-btn ${scanType === 'popular' ? 'active' : ''}`}>인기 Top 10</button>
-                        <button onClick={() => handleScan('rising')} disabled={isScanning} className={`scan-btn ${scanType === 'rising' ? 'active' : ''}`}>상승 Top 10</button>
-                        <button onClick={() => handleScan('volume')} disabled={isScanning} className={`scan-btn ${scanType === 'volume' ? 'active' : ''}`}>거래량 Top 10</button>
+                        <button onClick={() => handleScan('msb')} disabled={isScanning} className={`scan-btn ${scanType === 'msb' ? 'active alert-pulse' : ''}`} style={{ borderColor: 'var(--accent-green)', color: 'var(--accent-green)' }}>⚡️ 폭풍 전야</button>
+                        <button onClick={() => handleScan('popular')} disabled={isScanning} className={`scan-btn ${scanType === 'popular' ? 'active' : ''}`}>인기 TOP 10</button>
+                        <button onClick={() => handleScan('rising')} disabled={isScanning} className={`scan-btn ${scanType === 'rising' ? 'active' : ''}`}>상승 TOP 10</button>
+                        <button onClick={() => handleScan('volume')} disabled={isScanning} className={`scan-btn ${scanType === 'volume' ? 'active' : ''}`}>거래량 TOP 10</button>
                         {scannedSymbols && <button onClick={clearFilter} className="scan-btn"><XCircle size={16} /> 초기화</button>}
                     </div>
 
@@ -323,8 +324,14 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
 
 
             <style jsx>{`
-        .scan-btn { background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 10px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; alignItems: center; gap: 8px; }
+        .scan-btn { background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 10px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.2s ease; }
         .scan-btn.active { background: var(--accent-blue); border-color: var(--accent-blue); }
+        .alert-pulse { animation: pulse-green 2s infinite; }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(48, 209, 88, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0); }
+        }
         .btn-primary { background: var(--accent-blue); color: white; text-decoration: none; padding: 12px 24px; border-radius: 12px; font-weight: 600; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px; }
         .btn-more { background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 12px 30px; border-radius: 12px; cursor: pointer; }
       `}</style>

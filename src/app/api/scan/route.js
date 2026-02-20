@@ -26,7 +26,7 @@ function getMarketStatus() {
 async function getStockData(symbol) {
     try {
         const result = await yahooFinance.historical(symbol, {
-            period1: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 최근 1주일
+            period1: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000), // 지표 분석을 위해 45일치 데이터 확보
             period2: new Date(),
             interval: '1d',
         });
@@ -40,11 +40,22 @@ async function getStockData(symbol) {
         const volume = latest.volume;
         const value = latest.close * latest.volume; // 거래대금
 
+        // MSB 분석 수행 (최근 2봉 기준)
+        const zigZag = calculateZigZag(result.map(d => ({
+            time: d.date.toISOString().split('T')[0],
+            open: d.open,
+            high: d.high,
+            low: d.low,
+            close: d.close,
+            volume: d.volume
+        })));
+
         return {
             symbol,
             changePercent,
             volume,
-            value
+            value,
+            hasMSB: zigZag.hasRecentBullishMSB || zigZag.hasRecentBearishMSB
         };
     } catch (e) {
         return null;
@@ -75,7 +86,7 @@ export async function GET(req) {
 
     // 2. Fresh Scan (모든 종목 데이터 수집)
     const allData = [];
-    const chunkSize = 10;
+    const chunkSize = 12;
 
     try {
         for (let i = 0; i < STOCK_LIST.length; i += chunkSize) {
@@ -86,7 +97,7 @@ export async function GET(req) {
                 if (res) allData.push(res);
             });
             if (i + chunkSize < STOCK_LIST.length) {
-                await new Promise(r => setTimeout(r, 100));
+                await new Promise(r => setTimeout(r, 50));
             }
         }
 
@@ -97,8 +108,10 @@ export async function GET(req) {
         } else if (type === 'volume') {
             sorted = [...allData].sort((a, b) => b.volume - a.volume);
         } else if (type === 'popular') {
-            // 인기 = 거래대금 기준
             sorted = [...allData].sort((a, b) => b.value - a.value);
+        } else if (type === 'msb') {
+            // 폭풍 전야: MSB가 포착된 종목들 중 거래대금이 큰 순서
+            sorted = allData.filter(d => d.hasMSB).sort((a, b) => b.value - a.value);
         }
 
         const top10Symbols = sorted.slice(0, 10).map(item => item.symbol);
