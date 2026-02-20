@@ -26,7 +26,7 @@ function getMarketStatus() {
 async function getStockData(symbol) {
     try {
         const result = await yahooFinance.historical(symbol, {
-            period1: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000), // 지표 분석을 위해 45일치 데이터 확보
+            period1: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // 지표 분석을 위해 90일치 데이터 확보
             period2: new Date(),
             interval: '1d',
         });

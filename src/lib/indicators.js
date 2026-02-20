@@ -52,7 +52,8 @@ export function calculateBB(data, period = 20, multiplier = 2) {
     });
 }
 
-export function calculateZigZag(data, depth = 3) {
+export function calculateZigZag(data, providedDepth) {
+    const depth = providedDepth || (data.length > 50 ? 10 : 5);
     const swings = [];
 
     // 1. Pivot Points (저점/고점 탐지)
