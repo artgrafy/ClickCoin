@@ -193,8 +193,8 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
                         </div>
                         <h1 style={{ fontSize: '2.2rem', fontWeight: 800, margin: 0, cursor: 'pointer' }}>ClickCoin</h1>
                     </Link>
-                    <a href="https://success365.kr/clickstock" style={{ fontSize: '0.9rem', background: 'rgba(255,59,48,0.12)', color: '#FF3B30', padding: '6px 12px', borderRadius: '8px', textDecoration: 'none', transition: 'all 0.2s', fontWeight: 700 }} className="hover:bg-[rgba(255,59,48,0.2)]">
-                        Go To ClickStock
+                    <a href="https://success365.kr/clickstock" style={{ fontSize: '0.85rem', background: '#1C1C1E', color: '#FFFFFF', padding: '6px 14px', borderRadius: '10px', textDecoration: 'none', transition: 'all 0.2s', fontWeight: 600, border: '1px solid rgba(255,255,255,0.1)', display: 'inline-flex', alignItems: 'center', gap: '4px' }} className="nav-button-hover">
+                        Go To <span style={{ color: '#FF3B30', fontWeight: 800 }}>ClickStock</span>
                     </a>
                 </div>
 
