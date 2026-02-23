@@ -63,58 +63,81 @@ export function calculateZigZag(data, providedDepth) {
 
     // 1. 설정 (차트와 동일한 깊이 계산)
     const depth = providedDepth || (candles.length > 50 ? 10 : 5);
-    const points = [], fvgs = [], obs = [], msbLines = [];
     let lastType = null, lastH = null, lastL = null;
 
-    // 2. 파동 분석 (SMC: Pivot Points)
-    for (let i = 2; i < candles.length - depth; i++) {
-        if (i >= depth) {
-            let isH = true, isL = true;
-            for (let j = 1; j <= depth; j++) {
-                if (candles[i - j].high > candles[i].high || (i + j < candles.length && candles[i + j].high > candles[i].high)) isH = false;
-                if (candles[i - j].low < candles[i].low || (i + j < candles.length && candles[i + j].low < candles[i].low)) isL = false;
-            }
-            if (isH) {
-                const val = candles[i].high; const lbl = lastH === null ? 'H' : (val > lastH ? 'HH' : 'LH');
-                if (lastType === 'H') { if (val > points[points.length - 1].value) points[points.length - 1] = { time: candles[i].time, value: val, type: 'H', label: lbl, index: i }; }
-                else { points.push({ time: candles[i].time, value: val, type: 'H', label: lbl, index: i }); lastType = 'H'; }
-                lastH = val;
-            } else if (isL) {
-                const val = candles[i].low; const lbl = lastL === null ? 'L' : (val < lastL ? 'LL' : 'HL');
-                if (lastType === 'L') { if (val < points[points.length - 1].value) points[points.length - 1] = { time: candles[i].time, value: val, type: 'L', label: lbl, index: i }; }
-                else { points.push({ time: candles[i].time, value: val, type: 'L', label: lbl, index: i }); lastType = 'L'; }
-                lastL = val;
-            }
+    // 2. 파동 분석 (Pivot Points) 및 정격 지그재그 추출
+    const rawPoints = [];
+    for (let i = depth; i < candles.length - depth; i++) {
+        let isH = true, isL = true;
+        for (let j = 1; j <= depth; j++) {
+            if (candles[i - j].high > candles[i].high || (i + j < candles.length && candles[i + j].high > candles[i].high)) isH = false;
+            if (candles[i - j].low < candles[i].low || (i + j < candles.length && candles[i + j].low < candles[i].low)) isL = false;
         }
+        if (isH) rawPoints.push({ time: candles[i].time, value: candles[i].high, type: 'H', index: i });
+        else if (isL) rawPoints.push({ time: candles[i].time, value: candles[i].low, type: 'L', index: i });
     }
 
-    // 3. 구조적 변화 추적 (SMC: MSB & OB)
-    const markers = [];
-    const allMsbTimes = [];
-    let activeLH = null, activeHL = null, lhTime = null, hlTime = null;
-
-    points.forEach((p, idx) => {
-        markers.push({ time: p.time, position: p.type === 'H' ? 'aboveBar' : 'belowBar', text: p.label, size: 0 });
-
-        if (p.label === 'LH') { activeLH = p.value; lhTime = p.time; }
-        if (p.label === 'HL') { activeHL = p.value; hlTime = p.time; }
-
-        const end = idx < points.length - 1 ? points[idx + 1].index : candles.length;
-        for (let k = p.index + 1; k < end; k++) {
-            const c = candles[k];
-
-            if (activeLH && c.close > activeLH) {
-                allMsbTimes.push({ time: c.time, type: 'bull' });
-                markers.push({ time: c.time, position: 'belowBar', color: '#3b82f6', shape: 'arrowUp', text: 'MSB', size: 1.5 });
-                activeLH = null;
-            }
-
-            if (activeHL && c.close < activeHL) {
-                allMsbTimes.push({ time: c.time, type: 'bear' });
-                markers.push({ time: c.time, position: 'aboveBar', color: '#f59e0b', shape: 'arrowDown', text: 'MSB', size: 1.5 });
-                activeHL = null;
+    // 지그재그 정제: 고점은 이전 저점보다 높아야 함, 저점은 이전 고점보다 낮아야 함
+    const sanitizedPoints = [];
+    rawPoints.forEach(p => {
+        if (sanitizedPoints.length === 0) { sanitizedPoints.push(p); }
+        else {
+            const last = sanitizedPoints[sanitizedPoints.length - 1];
+            if (p.type !== last.type) {
+                if (last.type === 'H' && p.value < last.value) sanitizedPoints.push(p);
+                else if (last.type === 'L' && p.value > last.value) sanitizedPoints.push(p);
+            } else {
+                if (p.type === 'H' && p.value > last.value) sanitizedPoints[sanitizedPoints.length - 1] = p;
+                else if (p.type === 'L' && p.value < last.value) sanitizedPoints[sanitizedPoints.length - 1] = p;
             }
         }
+    });
+
+    // 라벨링 (HH, LL 등)
+    const points = sanitizedPoints.map((p, idx, arr) => {
+        const prevSame = arr.slice(0, idx).reverse().find(x => x.type === p.type);
+        let lbl = p.type;
+        if (p.type === 'H') lbl = !prevSame ? 'H' : (p.value > prevSame.value ? 'HH' : 'LH');
+        else lbl = !prevSame ? 'L' : (p.value < prevSame.value ? 'LL' : 'HL');
+        return { ...p, label: lbl };
+    });
+
+    // 3. 구조적 변화 추적 (SMC: MSB & BOS) — 레이블 기반 판별
+    // ✅ 핵심: HH/LL 레이블을 직접 사용하여 추세 지속(BOS)과 반전(MSB)을 구분
+    const markers = [];
+    const allMsbTimes = [];
+    let lastTrend = 'neutral'; // 'bullish' | 'bearish' | 'neutral'
+
+    points.forEach((p) => {
+        // 피벗 레이블 텍스트 마커 (HH, LL, LH, HL)
+        markers.push({ time: p.time, position: p.type === 'H' ? 'aboveBar' : 'belowBar', text: p.label, size: 0 });
+
+        // HH = 전고점 돌파 (Bullish Break)
+        if (p.label === 'HH') {
+            if (lastTrend === 'bullish') {
+                // 이미 상승 추세 → 추세 지속 = BOS
+                markers.push({ time: p.time, position: 'belowBar', color: '#94a3b8', shape: 'square', text: 'BOS', size: 1 });
+            } else {
+                // 하락/중립 → 상승 반전 = MSB
+                markers.push({ time: p.time, position: 'belowBar', color: '#3b82f6', shape: 'arrowUp', text: 'MSB', size: 1.5 });
+                allMsbTimes.push({ time: p.time, type: 'bull' });
+            }
+            lastTrend = 'bullish';
+        }
+
+        // LL = 전저점 이탈 (Bearish Break)
+        if (p.label === 'LL') {
+            if (lastTrend === 'bearish') {
+                // 이미 하락 추세 → 추세 지속 = BOS
+                markers.push({ time: p.time, position: 'aboveBar', color: '#94a3b8', shape: 'square', text: 'BOS', size: 1 });
+            } else {
+                // 상승/중립 → 하락 반전 = MSB
+                markers.push({ time: p.time, position: 'aboveBar', color: '#f59e0b', shape: 'arrowDown', text: 'MSB', size: 1.5 });
+                allMsbTimes.push({ time: p.time, type: 'bear' });
+            }
+            lastTrend = 'bearish';
+        }
+        // LH, HL → 추세 전환 없음, MSB/BOS 마커 없음
     });
 
     // 4. 결과 판정 (최근 2봉 내 발생 여부)
