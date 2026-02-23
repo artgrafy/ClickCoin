@@ -102,43 +102,101 @@ export function calculateZigZag(data, providedDepth) {
         return { ...p, label: lbl };
     });
 
-    // 3. 구조적 변화 추적 (SMC: MSB & BOS) — 레이블 기반 판별
-    // ✅ 핵심: HH/LL 레이블을 직접 사용하여 추세 지속(BOS)과 반전(MSB)을 구분
+    // 3. MSB/BOS 판별 — 캔들 종가(close) 돌파 기반 (SMC 정석)
+    // BOS: 종가 > 직전 HH (상승 지속) 또는 종가 < 직전 LL (하락 지속)
+    // MSB: 종가 > 직전 LH (상승 반전) 또는 종가 < 직전 HL (하락 반전)
+    // 마커: 피벗이 아닌 '돌파 봉'에 표시, 피벗→돌파봉 점선 연결
     const markers = [];
     const allMsbTimes = [];
-    let lastTrend = 'neutral'; // 'bullish' | 'bearish' | 'neutral'
+    const msbLines = [];
 
+    // 피벗 레이블 마커 추가
     points.forEach((p) => {
-        // 피벗 레이블 텍스트 마커 (HH, LL, LH, HL)
         markers.push({ time: p.time, position: p.type === 'H' ? 'aboveBar' : 'belowBar', text: p.label, size: 0 });
-
-        // HH = 전고점 돌파 (Bullish Break)
-        if (p.label === 'HH') {
-            if (lastTrend === 'bullish') {
-                // 이미 상승 추세 → 추세 지속 = BOS
-                markers.push({ time: p.time, position: 'belowBar', color: '#94a3b8', shape: 'square', text: 'BOS', size: 1 });
-            } else {
-                // 하락/중립 → 상승 반전 = MSB
-                markers.push({ time: p.time, position: 'belowBar', color: '#3b82f6', shape: 'arrowUp', text: 'MSB', size: 1.5 });
-                allMsbTimes.push({ time: p.time, type: 'bull' });
-            }
-            lastTrend = 'bullish';
-        }
-
-        // LL = 전저점 이탈 (Bearish Break)
-        if (p.label === 'LL') {
-            if (lastTrend === 'bearish') {
-                // 이미 하락 추세 → 추세 지속 = BOS
-                markers.push({ time: p.time, position: 'aboveBar', color: '#94a3b8', shape: 'square', text: 'BOS', size: 1 });
-            } else {
-                // 상승/중립 → 하락 반전 = MSB
-                markers.push({ time: p.time, position: 'aboveBar', color: '#f59e0b', shape: 'arrowDown', text: 'MSB', size: 1.5 });
-                allMsbTimes.push({ time: p.time, type: 'bear' });
-            }
-            lastTrend = 'bearish';
-        }
-        // LH, HL → 추세 전환 없음, MSB/BOS 마커 없음
     });
+
+    // 인덱스 기반 피벗 맵 생성
+    const pointMap = new Map();
+    points.forEach(p => pointMap.set(p.index, p));
+
+    // 돌파 감지용 기준 레벨 추적
+    let lastHH = null; // { price, time }
+    let lastLL = null;
+    let lastLH = null;
+    let lastHL = null;
+
+    for (let i = 0; i < candles.length; i++) {
+        const c = candles[i];
+
+        // ── 1) 종가 돌파 체크 (이전 피벗 레벨 기준) ──
+
+        // BOS: 종가 > 직전 HH → 상승 추세 지속
+        if (lastHH && c.close > lastHH.price) {
+            markers.push({
+                time: c.time, position: 'belowBar',
+                color: '#94a3b8', shape: 'square', text: 'BOS', size: 1
+            });
+            msbLines.push({
+                start: { time: lastHH.time, price: lastHH.price },
+                end: { time: c.time, price: lastHH.price },
+                type: 'bullish'
+            });
+            lastHH = null;
+        }
+
+        // BOS: 종가 < 직전 LL → 하락 추세 지속
+        if (lastLL && c.close < lastLL.price) {
+            markers.push({
+                time: c.time, position: 'aboveBar',
+                color: '#94a3b8', shape: 'square', text: 'BOS', size: 1
+            });
+            msbLines.push({
+                start: { time: lastLL.time, price: lastLL.price },
+                end: { time: c.time, price: lastLL.price },
+                type: 'bearish'
+            });
+            lastLL = null;
+        }
+
+        // MSB: 종가 > 직전 LH → 상승 반전
+        if (lastLH && c.close > lastLH.price) {
+            markers.push({
+                time: c.time, position: 'belowBar',
+                color: '#3b82f6', shape: 'arrowUp', text: 'MSB', size: 1.5
+            });
+            msbLines.push({
+                start: { time: lastLH.time, price: lastLH.price },
+                end: { time: c.time, price: lastLH.price },
+                type: 'bullish'
+            });
+            allMsbTimes.push({ time: c.time, type: 'bull' });
+            lastLH = null;
+        }
+
+        // MSB: 종가 < 직전 HL → 하락 반전
+        if (lastHL && c.close < lastHL.price) {
+            markers.push({
+                time: c.time, position: 'aboveBar',
+                color: '#f59e0b', shape: 'arrowDown', text: 'MSB', size: 1.5
+            });
+            msbLines.push({
+                start: { time: lastHL.time, price: lastHL.price },
+                end: { time: c.time, price: lastHL.price },
+                type: 'bearish'
+            });
+            allMsbTimes.push({ time: c.time, type: 'bear' });
+            lastHL = null;
+        }
+
+        // ── 2) 피벗 포인트에서 기준 레벨 갱신 ──
+        const p = pointMap.get(i);
+        if (p) {
+            if (p.label === 'HH') lastHH = { price: p.value, time: p.time };
+            else if (p.label === 'LL') lastLL = { price: p.value, time: p.time };
+            else if (p.label === 'LH') lastLH = { price: p.value, time: p.time };
+            else if (p.label === 'HL') lastHL = { price: p.value, time: p.time };
+        }
+    }
 
     // 4. 결과 판정 (최근 2봉 내 발생 여부)
     let hasRecentBullishMSB = false;
@@ -160,6 +218,7 @@ export function calculateZigZag(data, providedDepth) {
     return {
         lineData: points.map(p => ({ time: p.time, value: p.value })),
         markers: markers.sort((a, b) => (a.time > b.time ? 1 : -1)),
+        msbLines,
         keyLevels: [],
         hasRecentBullishMSB,
         hasRecentBearishMSB,
