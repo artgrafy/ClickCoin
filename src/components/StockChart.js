@@ -265,10 +265,17 @@ export const StockChart = ({ data, stockName, colors: {
             e.stopPropagation();
 
             if (isPriceScale) {
-                // Y축 전용 확대/축소
+                // Y축 전용 확대/축소 (경계 제한 강화)
                 const factor = e.deltaY < 0 ? 0.9 : 1.1;
-                scaleMargins.current.top = Math.min(0.48, Math.max(0.01, scaleMargins.current.top * factor));
-                scaleMargins.current.bottom = Math.min(0.48, Math.max(0.01, scaleMargins.current.bottom * factor));
+                let newTop = Math.min(0.8, Math.max(0.05, scaleMargins.current.top * factor));
+                let newBottom = Math.min(0.8, Math.max(0.05, scaleMargins.current.bottom * factor));
+
+                if (newTop + newBottom > 0.9) {
+                    const ratio = 0.9 / (newTop + newBottom);
+                    newTop *= ratio; newBottom *= ratio;
+                }
+
+                scaleMargins.current = { top: newTop, bottom: newBottom };
                 chart.priceScale('right').applyOptions({ scaleMargins: scaleMargins.current });
             } else {
                 // X축 전용 확대/축소 (마우스 포인트 중심 정밀 줌)
@@ -301,16 +308,17 @@ export const StockChart = ({ data, stockName, colors: {
             const isPriceScale = relX > rect.width * 0.88;
 
             if (e.buttons === 1) {
-                // 상하 드래그 팬닝
+                // 상하 드래그 팬닝 (경계 제한 강화)
                 const deltaY = (e.clientY - lastMouseY) / container.clientHeight;
                 lastMouseY = e.clientY;
 
-                scaleMargins.current.top += deltaY;
-                scaleMargins.current.bottom -= deltaY;
+                let newTop = scaleMargins.current.top + deltaY;
+                let newBottom = scaleMargins.current.bottom - deltaY;
 
-                scaleMargins.current.top = Math.max(-0.5, Math.min(0.8, scaleMargins.current.top));
-                scaleMargins.current.bottom = Math.max(-0.5, Math.min(0.8, scaleMargins.current.bottom));
+                newTop = Math.max(-0.2, Math.min(0.85, newTop));
+                newBottom = Math.max(-0.2, Math.min(0.85, newBottom));
 
+                scaleMargins.current = { top: newTop, bottom: newBottom };
                 chart.priceScale('right').applyOptions({ scaleMargins: scaleMargins.current });
                 drawSMC();
                 return;
@@ -379,12 +387,13 @@ export const StockChart = ({ data, stockName, colors: {
 
                 if (e.cancelable) e.preventDefault();
 
-                scaleMargins.current.top += deltaY;
-                scaleMargins.current.bottom -= deltaY;
+                let newTop = scaleMargins.current.top + deltaY;
+                let newBottom = scaleMargins.current.bottom - deltaY;
 
-                scaleMargins.current.top = Math.max(-0.5, Math.min(0.8, scaleMargins.current.top));
-                scaleMargins.current.bottom = Math.max(-0.5, Math.min(0.8, scaleMargins.current.bottom));
+                newTop = Math.max(-0.2, Math.min(0.85, newTop));
+                newBottom = Math.max(-0.2, Math.min(0.85, newBottom));
 
+                scaleMargins.current = { top: newTop, bottom: newBottom };
                 chart.priceScale('right').applyOptions({ scaleMargins: scaleMargins.current });
                 drawSMC();
             }
