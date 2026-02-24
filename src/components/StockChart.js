@@ -262,8 +262,21 @@ export const StockChart = ({ data, stockName, colors: {
 
         const handleMouseMove = (e) => {
             const rect = container.getBoundingClientRect();
-            const isPriceScale = e.clientX - rect.left > rect.width * 0.92;
-            container.style.cursor = isPriceScale ? 'ns-resize' : 'default';
+            const relX = e.clientX - rect.left;
+            const isPriceScale = relX > rect.width * 0.88; // 12% 영역으로 확대
+
+            const canvases = container.getElementsByTagName('canvas');
+            if (isPriceScale) {
+                container.style.setProperty('cursor', 'ns-resize', 'important');
+                for (let i = 0; i < canvases.length; i++) {
+                    canvases[i].style.setProperty('cursor', 'ns-resize', 'important');
+                }
+            } else {
+                container.style.removeProperty('cursor');
+                for (let i = 0; i < canvases.length; i++) {
+                    canvases[i].style.removeProperty('cursor');
+                }
+            }
         };
 
         container.addEventListener('wheel', handleWheel, { passive: false });
