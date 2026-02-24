@@ -338,8 +338,18 @@ export const StockChart = ({ data, stockName, colors: {
         };
 
         let lastTouchY = 0;
+        let lastTapTime = 0;
+
         const handleTouchStart = (e) => {
             if (e.touches.length === 1) {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTapTime;
+
+                if (tapLength < 300 && tapLength > 0) {
+                    handleDblClick();
+                }
+
+                lastTapTime = currentTime;
                 lastTouchY = e.touches[0].clientY;
             }
         };
