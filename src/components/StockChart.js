@@ -66,7 +66,6 @@ export const StockChart = ({ data, stockName, colors: {
             leftPriceScale: { visible: false },
             localization: {
                 locale: 'ko-KR',
-                priceFormatter: (p) => p < 10 ? p.toFixed(4) : p.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
                 timeFormatter: (t) => {
                     const d = new Date(t);
                     return `${String(d.getFullYear()).slice(-2)}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
@@ -80,6 +79,10 @@ export const StockChart = ({ data, stockName, colors: {
             wickUpColor: '#089981', wickDownColor: '#f23645',
             priceLineVisible: true, lastPriceLineVisible: true,
             priceLineStyle: LineStyle.Dashed,
+            priceFormat: {
+                type: 'custom',
+                formatter: (p) => p < 1 ? p.toFixed(4) : p < 10 ? p.toFixed(2) : p.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
+            }
         });
         candlestickSeries.setData(cleanCandles);
 
