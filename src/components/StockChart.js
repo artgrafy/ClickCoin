@@ -282,6 +282,8 @@ export const StockChart = ({ data, stockName, colors: {
         };
 
         const handleMouseMove = (e) => {
+            if (e.buttons === 1) return; // 드래그 중(좌클릭 유지)에는 커서 변경 금지
+
             const rect = container.getBoundingClientRect();
             const relX = e.clientX - rect.left;
             const isPriceScale = relX > rect.width * 0.88;
@@ -303,6 +305,10 @@ export const StockChart = ({ data, stockName, colors: {
             }
         };
 
+        const handleMouseUp = () => {
+            container.style.removeProperty('cursor');
+        };
+
         const handleDblClick = () => {
             chart.priceScale('right').applyOptions({ autoScale: true });
             chart.timeScale().fitContent();
@@ -311,6 +317,7 @@ export const StockChart = ({ data, stockName, colors: {
         container.addEventListener('wheel', handleWheel, { passive: false });
         container.addEventListener('mousemove', handleMouseMove);
         container.addEventListener('mousedown', handleMouseDown);
+        window.addEventListener('mouseup', handleMouseUp);
         container.addEventListener('dblclick', handleDblClick);
 
         const handleResize = () => {
@@ -325,6 +332,7 @@ export const StockChart = ({ data, stockName, colors: {
             container.removeEventListener('wheel', handleWheel);
             container.removeEventListener('mousemove', handleMouseMove);
             container.removeEventListener('mousedown', handleMouseDown);
+            window.removeEventListener('mouseup', handleMouseUp);
             container.removeEventListener('dblclick', handleDblClick);
             window.removeEventListener('resize', handleResize);
             chart.remove();
