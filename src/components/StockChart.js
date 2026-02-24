@@ -334,7 +334,13 @@ export const StockChart = ({ data, stockName, colors: {
                 autoScale: true,
                 scaleMargins: scaleMargins.current
             });
-            chart.timeScale().fitContent();
+
+            // 최근 150봉(약 6개월) 보기로 조정
+            const totalBars = cleanCandles.length;
+            chart.timeScale().setVisibleLogicalRange({
+                from: totalBars - 150,
+                to: totalBars + 5
+            });
         };
 
         let lastTouchY = 0;
