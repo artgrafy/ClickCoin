@@ -337,11 +337,39 @@ export const StockChart = ({ data, stockName, colors: {
             chart.timeScale().fitContent();
         };
 
+        let lastTouchY = 0;
+        const handleTouchStart = (e) => {
+            if (e.touches.length === 1) {
+                lastTouchY = e.touches[0].clientY;
+            }
+        };
+
+        const handleTouchMove = (e) => {
+            if (e.touches.length === 1) {
+                const touchY = e.touches[0].clientY;
+                const deltaY = (touchY - lastTouchY) / container.clientHeight;
+                lastTouchY = touchY;
+
+                if (e.cancelable) e.preventDefault();
+
+                scaleMargins.current.top += deltaY;
+                scaleMargins.current.bottom -= deltaY;
+
+                scaleMargins.current.top = Math.max(-0.5, Math.min(0.8, scaleMargins.current.top));
+                scaleMargins.current.bottom = Math.max(-0.5, Math.min(0.8, scaleMargins.current.bottom));
+
+                chart.priceScale('right').applyOptions({ scaleMargins: scaleMargins.current });
+                drawSMC();
+            }
+        };
+
         container.addEventListener('wheel', handleWheel, { passive: false });
         container.addEventListener('mousemove', handleMouseMove);
         container.addEventListener('mousedown', handleMouseDown);
         window.addEventListener('mouseup', handleMouseUp);
         container.addEventListener('dblclick', handleDblClick);
+        container.addEventListener('touchstart', handleTouchStart, { passive: true });
+        container.addEventListener('touchmove', handleTouchMove, { passive: false });
 
         const handleResize = () => {
             const w = chartContainerRef.current.clientWidth, h = window.innerWidth < 768 ? 450 : 600;
@@ -357,6 +385,8 @@ export const StockChart = ({ data, stockName, colors: {
             container.removeEventListener('mousedown', handleMouseDown);
             window.removeEventListener('mouseup', handleMouseUp);
             container.removeEventListener('dblclick', handleDblClick);
+            container.removeEventListener('touchstart', handleTouchStart);
+            container.removeEventListener('touchmove', handleTouchMove);
             window.removeEventListener('resize', handleResize);
             chart.remove();
         };
