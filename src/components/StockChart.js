@@ -86,7 +86,15 @@ export const StockChart = ({ data, stockName, colors: {
         // 거래량
         const volumeSeries = chart.addHistogramSeries({
             color: '#26a69a',
-            priceFormat: { type: 'volume' },
+            priceFormat: {
+                type: 'custom',
+                formatter: (price) => {
+                    if (price >= 1000000) return (price / 1000000).toFixed(1) + 'M';
+                    if (price >= 1000) return (price / 1000).toFixed(1) + 'K';
+                    return Math.floor(price).toString();
+                },
+                minMove: 1,
+            },
             priceScaleId: 'volume',
             priceLineVisible: false,
             lastPriceLineVisible: false,
