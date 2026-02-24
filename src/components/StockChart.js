@@ -247,8 +247,11 @@ export const StockChart = ({ data, stockName, colors: {
 
         const handleWheel = (e) => {
             const rect = container.getBoundingClientRect();
-            if (e.clientX - rect.left > rect.width * 0.92) {
+            const isPriceScale = e.clientX - rect.left > rect.width * 0.92;
+
+            if (isPriceScale) {
                 e.preventDefault();
+                e.stopPropagation();
                 const factor = e.deltaY < 0 ? 0.9 : 1.1;
                 scaleMargins.current.top = Math.min(0.48, Math.max(0.01, scaleMargins.current.top * factor));
                 scaleMargins.current.bottom = Math.min(0.48, Math.max(0.01, scaleMargins.current.bottom * factor));
@@ -256,7 +259,15 @@ export const StockChart = ({ data, stockName, colors: {
                 drawSMC();
             }
         };
+
+        const handleMouseMove = (e) => {
+            const rect = container.getBoundingClientRect();
+            const isPriceScale = e.clientX - rect.left > rect.width * 0.92;
+            container.style.cursor = isPriceScale ? 'ns-resize' : 'default';
+        };
+
         container.addEventListener('wheel', handleWheel, { passive: false });
+        container.addEventListener('mousemove', handleMouseMove);
 
         const handleResize = () => {
             const w = chartContainerRef.current.clientWidth, h = window.innerWidth < 768 ? 450 : 600;
@@ -266,7 +277,12 @@ export const StockChart = ({ data, stockName, colors: {
         window.addEventListener('resize', handleResize); handleResize();
         chart.timeScale().setVisibleLogicalRange({ from: cleanCandles.length - 80, to: cleanCandles.length + 20 });
         chartRef.current = chart;
-        return () => { container.removeEventListener('wheel', handleWheel); window.removeEventListener('resize', handleResize); chart.remove(); };
+        return () => {
+            container.removeEventListener('wheel', handleWheel);
+            container.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('resize', handleResize);
+            chart.remove();
+        };
     }, [data, backgroundColor, stockName]);
 
     return (
