@@ -284,24 +284,34 @@ export const StockChart = ({ data, stockName, colors: {
         const handleMouseMove = (e) => {
             const rect = container.getBoundingClientRect();
             const relX = e.clientX - rect.left;
-            const isPriceScale = relX > rect.width * 0.88; // 12% 영역으로 확대
+            const isPriceScale = relX > rect.width * 0.88;
 
             const canvases = container.getElementsByTagName('canvas');
-            if (isPriceScale) {
-                container.style.setProperty('cursor', 'ns-resize', 'important');
-                for (let i = 0; i < canvases.length; i++) {
-                    canvases[i].style.setProperty('cursor', 'ns-resize', 'important');
-                }
-            } else {
-                container.style.removeProperty('cursor');
-                for (let i = 0; i < canvases.length; i++) {
-                    canvases[i].style.removeProperty('cursor');
-                }
+            const cursor = isPriceScale ? 'ns-resize' : 'ew-resize';
+
+            container.style.setProperty('cursor', cursor, 'important');
+            for (let i = 0; i < canvases.length; i++) {
+                canvases[i].style.setProperty('cursor', cursor, 'important');
             }
+        };
+
+        const handleMouseDown = () => {
+            container.style.setProperty('cursor', 'grabbing', 'important');
+            const canvases = container.getElementsByTagName('canvas');
+            for (let i = 0; i < canvases.length; i++) {
+                canvases[i].style.setProperty('cursor', 'grabbing', 'important');
+            }
+        };
+
+        const handleDblClick = () => {
+            chart.priceScale('right').applyOptions({ autoScale: true });
+            chart.timeScale().fitContent();
         };
 
         container.addEventListener('wheel', handleWheel, { passive: false });
         container.addEventListener('mousemove', handleMouseMove);
+        container.addEventListener('mousedown', handleMouseDown);
+        container.addEventListener('dblclick', handleDblClick);
 
         const handleResize = () => {
             const w = chartContainerRef.current.clientWidth, h = window.innerWidth < 768 ? 450 : 600;
@@ -314,6 +324,8 @@ export const StockChart = ({ data, stockName, colors: {
         return () => {
             container.removeEventListener('wheel', handleWheel);
             container.removeEventListener('mousemove', handleMouseMove);
+            container.removeEventListener('mousedown', handleMouseDown);
+            container.removeEventListener('dblclick', handleDblClick);
             window.removeEventListener('resize', handleResize);
             chart.remove();
         };
