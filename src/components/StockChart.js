@@ -54,8 +54,8 @@ export const StockChart = ({ data, stockName, colors: {
                 vertLine: { labelBackgroundColor: '#2b2b43', style: LineStyle.Dashed },
                 horzLine: { labelBackgroundColor: '#2b2b43', style: LineStyle.Dashed },
             },
-            handleScale: { mouseWheel: true, pinch: true, axisPressedMouseMove: false },
-            handleScroll: { mouseWheel: true, pressedMouseMove: true },
+            handleScale: { mouseWheel: false, pinch: true, axisPressedMouseMove: false },
+            handleScroll: { mouseWheel: false, pressedMouseMove: true },
             timeScale: { borderColor: 'rgba(255, 255, 255, 0.1)', rightOffset: 50 },
             rightPriceScale: {
                 borderColor: 'rgba(255, 255, 255, 0.1)',
@@ -247,17 +247,35 @@ export const StockChart = ({ data, stockName, colors: {
 
         const handleWheel = (e) => {
             const rect = container.getBoundingClientRect();
-            const isPriceScale = e.clientX - rect.left > rect.width * 0.92;
+            const relX = e.clientX - rect.left;
+            const isPriceScale = relX > rect.width * 0.88;
+
+            e.preventDefault();
+            e.stopPropagation();
 
             if (isPriceScale) {
-                e.preventDefault();
-                e.stopPropagation();
+                // Y축 전용 확대/축소
                 const factor = e.deltaY < 0 ? 0.9 : 1.1;
                 scaleMargins.current.top = Math.min(0.48, Math.max(0.01, scaleMargins.current.top * factor));
                 scaleMargins.current.bottom = Math.min(0.48, Math.max(0.01, scaleMargins.current.bottom * factor));
                 chart.priceScale('right').applyOptions({ scaleMargins: scaleMargins.current });
-                drawSMC();
+            } else {
+                // X축 전용 확대/축소
+                const timeScale = chart.timeScale();
+                const logicalRange = timeScale.getVisibleLogicalRange();
+                if (!logicalRange) return;
+
+                const width = logicalRange.to - logicalRange.from;
+                const center = logicalRange.from + width / 2;
+                const factor = e.deltaY < 0 ? 0.8 : 1.2;
+                const newWidth = width * factor;
+
+                timeScale.setVisibleLogicalRange({
+                    from: center - newWidth / 2,
+                    to: center + newWidth / 2
+                });
             }
+            drawSMC();
         };
 
         const handleMouseMove = (e) => {
