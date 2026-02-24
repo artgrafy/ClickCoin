@@ -260,20 +260,23 @@ export const StockChart = ({ data, stockName, colors: {
                 scaleMargins.current.bottom = Math.min(0.48, Math.max(0.01, scaleMargins.current.bottom * factor));
                 chart.priceScale('right').applyOptions({ scaleMargins: scaleMargins.current });
             } else {
-                // X축 전용 확대/축소
+                // X축 전용 확대/축소 (마우스 포인트 중심 정밀 줌)
                 const timeScale = chart.timeScale();
                 const logicalRange = timeScale.getVisibleLogicalRange();
                 if (!logicalRange) return;
 
-                const width = logicalRange.to - logicalRange.from;
-                const center = logicalRange.from + width / 2;
-                const factor = e.deltaY < 0 ? 0.8 : 1.2;
-                const newWidth = width * factor;
+                const relX = e.clientX - rect.left;
+                const zoomPoint = timeScale.coordinateToLogical(relX);
+                if (zoomPoint === null) return;
 
-                timeScale.setVisibleLogicalRange({
-                    from: center - newWidth / 2,
-                    to: center + newWidth / 2
-                });
+                const factor = e.deltaY < 0 ? 0.9 : 1.1; // 배율 미세 조정
+                const newWidth = (logicalRange.to - logicalRange.from) * factor;
+
+                const leftRatio = (zoomPoint - logicalRange.from) / (logicalRange.to - logicalRange.from);
+                const newFrom = zoomPoint - newWidth * leftRatio;
+                const newTo = newFrom + newWidth;
+
+                timeScale.setVisibleLogicalRange({ from: newFrom, to: newTo });
             }
             drawSMC();
         };
