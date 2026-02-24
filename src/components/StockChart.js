@@ -281,13 +281,31 @@ export const StockChart = ({ data, stockName, colors: {
             drawSMC();
         };
 
-        const handleMouseMove = (e) => {
-            if (e.buttons === 1) return; // 드래그 중(좌클릭 유지)에는 커서 변경 금지
+        let isDragging = false;
+        let lastMouseY = 0;
 
+        const handleMouseMove = (e) => {
             const rect = container.getBoundingClientRect();
             const relX = e.clientX - rect.left;
             const isPriceScale = relX > rect.width * 0.88;
 
+            if (e.buttons === 1) {
+                // 상하 드래그 팬닝
+                const deltaY = (e.clientY - lastMouseY) / container.clientHeight;
+                lastMouseY = e.clientY;
+
+                scaleMargins.current.top += deltaY;
+                scaleMargins.current.bottom -= deltaY;
+
+                scaleMargins.current.top = Math.max(-0.5, Math.min(0.8, scaleMargins.current.top));
+                scaleMargins.current.bottom = Math.max(-0.5, Math.min(0.8, scaleMargins.current.bottom));
+
+                chart.priceScale('right').applyOptions({ scaleMargins: scaleMargins.current });
+                drawSMC();
+                return;
+            }
+
+            lastMouseY = e.clientY;
             const canvases = container.getElementsByTagName('canvas');
             const cursor = isPriceScale ? 'ns-resize' : 'ew-resize';
 
@@ -297,7 +315,8 @@ export const StockChart = ({ data, stockName, colors: {
             }
         };
 
-        const handleMouseDown = () => {
+        const handleMouseDown = (e) => {
+            lastMouseY = e.clientY;
             container.style.setProperty('cursor', 'grabbing', 'important');
             const canvases = container.getElementsByTagName('canvas');
             for (let i = 0; i < canvases.length; i++) {
@@ -310,7 +329,11 @@ export const StockChart = ({ data, stockName, colors: {
         };
 
         const handleDblClick = () => {
-            chart.priceScale('right').applyOptions({ autoScale: true });
+            scaleMargins.current = { top: 0.05, bottom: 0.3 };
+            chart.priceScale('right').applyOptions({
+                autoScale: true,
+                scaleMargins: scaleMargins.current
+            });
             chart.timeScale().fitContent();
         };
 
