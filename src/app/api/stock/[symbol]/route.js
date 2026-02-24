@@ -12,7 +12,7 @@ export async function GET(request, { params }) {
         const mcpRequestUrl = mcpUrl;
         const response = await fetch(mcpRequestUrl, {
             method: 'POST',
-            cache: 'default', // Vercel/Next.js 기본 캐시 활용
+            cache: 'no-store', // 최신 로직 반영을 위해 캐시 무력화
             headers: {
                 'Content-Type': 'application/json',
                 'x-mcp-key': mcpKey

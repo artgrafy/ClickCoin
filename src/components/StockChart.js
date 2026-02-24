@@ -138,7 +138,7 @@ export const StockChart = ({ data, stockName, colors: {
         if (data.marketStructure?.points) {
             zigzagSeries.setData(data.marketStructure.points.map(p => ({
                 time: p.time,
-                value: p.price
+                value: p.price || p.value
             })));
         }
 
