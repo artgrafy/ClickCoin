@@ -1,8 +1,7 @@
-
-// 🎯 Market Structure Analysis (Success365 Engine Mirror v46)
+// 🎯 Market Structure Analysis (Success365 Engine Mirror v101)
 export function calculateZigZag(data) {
     const candles = data;
-    const depth = 3;
+    const depth = 5; // 허브 엔진과 동일하게 depth 5로 고정
     const rawPoints = [];
 
     // 1. Pivot Detection
@@ -50,64 +49,51 @@ export function calculateZigZag(data) {
     const markers = [], msbLines = [];
     let activeHighTarget = null, activeLowTarget = null;
     const signalDates = new Set();
-    const allMsbTimes = [];
+    let hasMSB = false;
 
     for (let i = 0; i < candles.length; i++) {
         const c = candles[i];
         const dateKey = String(c.time).split('T')[0];
 
-        // [1] 타켓 갱신 (완전 대칭 원칙)
+        // [1] 타켓 갱신
         const p = pointMap.get(i);
         if (p) {
-            if (p.type === 'H') activeHighTarget = { price: p.value, time: p.time, label: p.label, isBroken: false };
-            else activeLowTarget = { price: p.value, time: p.time, label: p.label, isBroken: false };
+            if (p.type === 'H') activeHighTarget = { price: p.value, time: p.time, label: p.label, isBroken: false, index: i };
+            else activeLowTarget = { price: p.value, time: p.time, label: p.label, isBroken: false, index: i };
             markers.push({ time: p.time, position: p.type === 'H' ? 'aboveBar' : 'belowBar', text: p.label, size: 0 });
         }
 
-        // [2] 돌파 체크 (One Life Rule)
+        // [2] 돌파 체크
         if (!signalDates.has(dateKey)) {
-            // 상방 돌파 (고점)
             if (activeHighTarget && !activeHighTarget.isBroken && c.close > activeHighTarget.price) {
                 const isBOS = (activeHighTarget.label === 'HH');
                 markers.push({
-                    time: c.time, position: 'belowBar',
-                    color: isBOS ? '#94a3b8' : '#3b82f6', shape: isBOS ? 'square' : 'arrowUp',
-                    text: isBOS ? 'BOS' : 'MSB', size: 1
+                    time: c.time, position: 'belowBar', color: isBOS ? '#94a3b8' : '#3b82f6',
+                    shape: 'arrowUp', text: isBOS ? 'BOS' : 'MSB', size: 2
                 });
-                msbLines.push({ start: { time: activeHighTarget.time, price: activeHighTarget.price }, end: { time: c.time, price: activeHighTarget.price }, type: 'bullish' });
-                if (!isBOS) allMsbTimes.push({ time: c.time, type: 'bull' });
+                if (!isBOS && i >= candles.length - 5) hasMSB = true;
+                else if (isBOS && i >= candles.length - 5) hasMSB = false;
                 activeHighTarget.isBroken = true;
                 signalDates.add(dateKey);
             }
-            // 하방 돌파 (저점 - 완전 대칭)
             else if (activeLowTarget && !activeLowTarget.isBroken && c.close < activeLowTarget.price) {
                 const isBOS = (activeLowTarget.label === 'LL');
                 markers.push({
-                    time: c.time, position: 'aboveBar',
-                    color: isBOS ? '#94a3b8' : '#f59e0b', shape: isBOS ? 'square' : 'arrowDown',
-                    text: isBOS ? 'BOS' : 'MSB', size: 1
+                    time: c.time, position: 'aboveBar', color: isBOS ? '#94a3b8' : '#f59e0b',
+                    shape: 'arrowDown', text: isBOS ? 'BOS' : 'MSB', size: 2
                 });
-                msbLines.push({ start: { time: activeLowTarget.time, price: activeLowTarget.price }, end: { time: c.time, price: activeLowTarget.price }, type: 'bearish' });
-                if (!isBOS) allMsbTimes.push({ time: c.time, type: 'bear' });
+                if (!isBOS && i >= candles.length - 5) hasMSB = true;
+                else if (isBOS && i >= candles.length - 5) hasMSB = false;
                 activeLowTarget.isBroken = true;
                 signalDates.add(dateKey);
             }
         }
     }
 
-    let hasRecentBullishMSB = false;
-    let hasRecentBearishMSB = false;
-    if (candles.length >= 2) {
-        const threshold = candles[candles.length - 2].time;
-        hasRecentBullishMSB = allMsbTimes.some(m => m.type === 'bull' && m.time >= threshold);
-        hasRecentBearishMSB = allMsbTimes.some(m => m.type === 'bear' && m.time >= threshold);
-    }
-
     return {
         lineData: labeledPoints.map(p => ({ time: p.time, value: p.value })),
         markers: markers.sort((a, b) => (a.time > b.time ? 1 : -1)),
-        msbLines,
-        hasRecentBullishMSB,
-        hasRecentBearishMSB
+        msbLines: msbLines,
+        hasRecentMSB: hasMSB
     };
 }

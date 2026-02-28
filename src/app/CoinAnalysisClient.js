@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { STOCK_LIST } from '@/lib/stocks';
 import { StockChart } from '@/components/StockChart';
-import { Search, TrendingUp, RefreshCw, XCircle, ArrowRight } from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, RefreshCw, XCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import NewsletterForm from '@/components/NewsletterForm';
@@ -13,6 +13,18 @@ import MiniNewsletterForm from '@/components/MiniNewsletterForm';
 let SCAN_CACHE = {
     type: null,
     symbols: null
+};
+
+const stripMarkdown = (text) => {
+    if (!text) return '';
+    return text
+        .replace(/\*\*(.*?)\*\*/g, '$1') // 강조 제거
+        .replace(/\[(.*?)\]\((.*?)\)/g, '$1') // 링크 제거
+        .replace(/\[[^\]]+\]/g, '') // 불필요한 대괄호 레이블 제거
+        .replace(/#{1,6}\s?/g, '') // 헤딩 제거
+        .replace(/•\s?|>\s?|-\s?/g, '') // 불릿 및 인용구 기호 제거
+        .replace(/\n+/g, ' ') // 줄바꿈을 공백으로 변환
+        .trim();
 };
 
 
@@ -251,15 +263,65 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                 {mcpData && (
                                     <div style={{ padding: '1.2rem 1.6rem', background: 'rgba(255,255,255,0.02)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', fontSize: '0.95rem', lineHeight: '1.7' }}>
-                                        <div style={{ color: 'var(--accent-green)', fontWeight: 700, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <TrendingUp size={18} /> AI 전략 브리핑
+                                        <div style={{
+                                            marginBottom: '10px',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            flexWrap: 'wrap',
+                                            gap: '10px'
+                                        }}>
+                                            <div style={{ color: 'var(--accent-green)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <TrendingUp size={18} /> AI 전략 브리핑
+                                            </div>
+
+                                            {/* 컴팩트 디지털 게이지 */}
+                                            {(() => {
+                                                const { strength } = mcpData;
+                                                const isBullish = strength >= 50;
+                                                const displayStrength = Math.abs(strength - 50) * 2;
+                                                const color = isBullish ? '#d4a373' : '#f23645';
+                                                const totalBars = 10;
+                                                // 10% 단위로 막대가 하나씩 차오르도록 수정 (더 직관적)
+                                                const activeBars = Math.max(1, Math.ceil(displayStrength / 10));
+
+                                                return (
+                                                    <div style={{
+                                                        background: 'rgba(0,0,0,0.2)',
+                                                        padding: '4px 12px',
+                                                        borderRadius: '6px',
+                                                        fontSize: '0.75rem',
+                                                        fontFamily: 'monospace',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '10px',
+                                                        color: color,
+                                                        border: `1px solid ${isBullish ? 'rgba(212,163,115,0.2)' : 'rgba(242,54,69,0.2)'}`
+                                                    }}>
+                                                        <span style={{ opacity: 0.9 }}>[ AI {isBullish ? '상승' : '하락'} 강도</span>
+                                                        <span style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
+                                                            {[...Array(totalBars)].map((_, i) => (
+                                                                <span key={i} style={{
+                                                                    width: '4px',
+                                                                    height: '12px',
+                                                                    background: i < activeBars ? color : 'rgba(255,255,255,0.05)',
+                                                                    borderRadius: '1px',
+                                                                    boxShadow: i < activeBars ? `0 0 5px ${color}44` : 'none'
+                                                                }} />
+                                                            ))}
+                                                        </span>
+                                                        <span style={{ fontWeight: 800, minWidth: '35px' }}>{Math.round(displayStrength)}% ]</span>
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
+
                                         <div style={{ color: 'rgba(255,255,255,0.85)' }}>
                                             {(() => {
                                                 const { trend, strength, rsi, marketStructure, srLevels } = mcpData;
                                                 const trendText = trend === 'bullish' ? '<span style="color:#089981;font-weight:700;">강세</span>' : trend === 'bearish' ? '<span style="color:#f23645;font-weight:700;">약세</span>' : '<span style="color:#d1d4dc;font-weight:700;">중립</span>';
 
-                                                let msg = `현재 **${selectedStock.name}**은(는) 전체적으로 ${trendText} 흐름을 보이고 있으며, AI 진단 강도는 **${strength}%**로 예측됩니다. `;
+                                                let msg = `현재 **${selectedStock.name}**은(는) 전체적으로 ${trendText} 흐름을 보이고 있습니다. `;
 
                                                 if (marketStructure.hasMSB) {
                                                     msg += `차트상에서 최근 **구조적 변화(MSB)**가 포착되었는데, 이는 기존 추세의 힘이 빠지고 새로운 방향성이 결정되는 중요한 변곡점에 와 있음을 의미합니다. `;
@@ -281,7 +343,7 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
                                                     if (nearestVal >= 1000) {
                                                         nearest = Math.round(nearestVal).toLocaleString();
                                                     } else if (nearestVal >= 1) {
-                                                        nearest = nearestVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                                        nearest = nearestVal.toFixed(2);
                                                     } else if (nearestVal >= 0.1) {
                                                         nearest = nearestVal.toFixed(4);
                                                     } else {
@@ -314,7 +376,7 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
                             <div style={{ opacity: 0.4, fontSize: '0.85rem', marginBottom: '10px' }}>{formatReportDate(latestReport)}</div>
                             <h3 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '1.2rem' }}>{latestReport.title}</h3>
                             <p style={{ fontSize: '1rem', lineHeight: 1.7, color: 'rgba(255,255,255,0.7)', marginBottom: '2rem' }}>
-                                {latestReport.content.find(c => c.type === 'paragraph')?.text?.substring(0, 180)}...
+                                {stripMarkdown(latestReport.content.find(c => c.type === 'paragraph')?.text).substring(0, 180)}...
                             </p>
                             <Link href={`/report/${latestReport.id}`} className="btn-primary">자세히 보기 <ArrowRight size={18} /></Link>
                         </article>
@@ -326,7 +388,7 @@ export default function CoinAnalysisClient({ symbol: initialSymbol }) {
                                 <div style={{ opacity: 0.4, fontSize: '0.75rem', marginBottom: '8px' }}>{formatReportDate(report)}</div>
                                 <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '10px' }}>{report.title}</h4>
                                 <p style={{ opacity: 0.6, fontSize: '0.85rem', WebkitLineClamp: 3, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                    {report.content.find(c => c.type === 'paragraph')?.text || report.summary}
+                                    {stripMarkdown(report.content.find(c => c.type === 'paragraph')?.text || report.summary)}
                                 </p>
                             </Link>
                         ))}

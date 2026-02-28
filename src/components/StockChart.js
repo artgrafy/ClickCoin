@@ -81,7 +81,15 @@ export const StockChart = ({ data, stockName, colors: {
             priceLineStyle: LineStyle.Dashed,
             priceFormat: {
                 type: 'custom',
-                formatter: (p) => p < 1 ? p.toFixed(4) : p < 10 ? p.toFixed(2) : p.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
+                formatter: (p) => {
+                    const val = Number(p);
+                    if (val < 0) return '';
+                    if (val === 0) return '0';
+                    if (val >= 1000) return val.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+                    if (val >= 1) return val.toFixed(2);
+                    if (val >= 0.1) return val.toFixed(4);
+                    return val.toFixed(6);
+                },
             }
         });
         candlestickSeries.setData(cleanCandles);
@@ -228,7 +236,15 @@ export const StockChart = ({ data, stockName, colors: {
         const setLegend = (c, v, r) => {
             if (!c || !legend) return;
             const clr = c.close >= c.open ? '#089981' : '#f23645';
-            const pf = (v) => v < 10 ? v.toFixed(4) : v.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            const pf = (v) => {
+                const val = Number(v);
+                if (val < 0) return '0';
+                if (val === 0) return '0';
+                if (val >= 1000) return val.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+                if (val >= 1) return val.toFixed(2);
+                if (val >= 0.1) return val.toFixed(4);
+                return val.toFixed(6);
+            };
 
             const vStr = v ? (v >= 1000000 ? (v / 1000000).toFixed(1) + 'M' : v >= 1000 ? (v / 1000).toFixed(1) + 'K' : Math.floor(v)) : '-';
             const rVal = r !== undefined ? Number(r).toFixed(1) : '-';
@@ -266,9 +282,9 @@ export const StockChart = ({ data, stockName, colors: {
 
             if (isPriceScale) {
                 // Y축 전용 확대/축소 (경계 제한 강화)
-                const factor = e.deltaY < 0 ? 0.9 : 1.1;
-                let newTop = Math.min(0.8, Math.max(0.05, scaleMargins.current.top * factor));
-                let newBottom = Math.min(0.8, Math.max(0.05, scaleMargins.current.bottom * factor));
+                const factor = e.deltaY < 0 ? 0.95 : 1.05;
+                let newTop = Math.min(0.6, Math.max(0.02, scaleMargins.current.top * factor));
+                let newBottom = Math.min(0.6, Math.max(0.05, scaleMargins.current.bottom * factor));
 
                 if (newTop + newBottom > 0.9) {
                     const ratio = 0.9 / (newTop + newBottom);
@@ -287,7 +303,7 @@ export const StockChart = ({ data, stockName, colors: {
                 const zoomPoint = timeScale.coordinateToLogical(relX);
                 if (zoomPoint === null) return;
 
-                const factor = e.deltaY < 0 ? 0.9 : 1.1; // 배율 미세 조정
+                const factor = e.deltaY < 0 ? 0.95 : 1.05; // 배율 미세 조정 (감도 인하)
                 const newWidth = (logicalRange.to - logicalRange.from) * factor;
 
                 const leftRatio = (zoomPoint - logicalRange.from) / (logicalRange.to - logicalRange.from);
@@ -309,7 +325,7 @@ export const StockChart = ({ data, stockName, colors: {
 
             if (e.buttons === 1) {
                 // 상하 드래그 팬닝 (경계 제한 강화)
-                const deltaY = (e.clientY - lastMouseY) / container.clientHeight;
+                const deltaY = ((e.clientY - lastMouseY) / container.clientHeight) * 0.5;
                 lastMouseY = e.clientY;
 
                 let newTop = scaleMargins.current.top + deltaY;
@@ -382,7 +398,7 @@ export const StockChart = ({ data, stockName, colors: {
         const handleTouchMove = (e) => {
             if (e.touches.length === 1) {
                 const touchY = e.touches[0].clientY;
-                const deltaY = (touchY - lastTouchY) / container.clientHeight;
+                const deltaY = ((touchY - lastTouchY) / container.clientHeight) * 0.5;
                 lastTouchY = touchY;
 
                 if (e.cancelable) e.preventDefault();

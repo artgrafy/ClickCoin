@@ -57,12 +57,12 @@ async function getStockData(symbol, hubResult = null) {
 
         // MSB 판정 (본진 데이터가 있으면 본진 기준, 없으면 로컬 로직 fallback)
         let hasMSB = false;
+        const zigZag = calculateZigZag(candles); // Calculate zigZag unconditionally
         if (hubResult?.marketStructure) {
             hasMSB = hubResult.marketStructure.hasMSB;
         } else {
-            // 본진 데이터가 아직 캐싱되지 않은 경우에만 로컬 계산 수행
-            const zigZag = calculateZigZag(candles);
-            hasMSB = zigZag.hasRecentBullishMSB || zigZag.hasRecentBearishMSB;
+            // 최근 5일 이내에 MSB 마커(추세반전)가 있는지 체크 (로컬 엔진 동기화)
+            hasMSB = zigZag.hasRecentMSB;
         }
 
         return {
@@ -80,7 +80,8 @@ async function getStockData(symbol, hubResult = null) {
 export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type') || 'rising';
-    const cacheKey = `coin_scan_results_v2_${type}`; // 캐시 버전업
+    // 🚀 캐시 버전업: v101 (로컬 엔진 동기화 완료)
+    const cacheKey = `coin_scan_results_v101_${type}`;
 
     // 1. Check Redis Cache
     if (redis) {
@@ -107,7 +108,8 @@ export async function GET(req) {
     let hubBatchData = {};
     try {
         const mcpKey = process.env.INTERNAL_MCP_API_KEY || 'Success365_Secret_2026_50c4229bf417a672';
-        const hubRes = await fetch('https://success365.kr/api/mcp/', {
+        const hubBase = process.env.SUCCESS365_HUB_URL || 'https://success365.kr';
+        const hubRes = await fetch(`${hubBase}/api/mcp/`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-mcp-key': mcpKey },
             body: JSON.stringify({
