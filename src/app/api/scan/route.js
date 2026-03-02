@@ -80,8 +80,8 @@ async function getStockData(symbol, hubResult = null) {
 export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type') || 'rising';
-    // 🚀 캐시 버전업: v102 (6개월 스윙 트레이딩 최적화 버전)
-    const cacheKey = `coin_scan_results_v102_${type}`;
+    // 🚀 캐시 버전업: v103 (DB 하이브리드 허브 v2.0 동기화 버전)
+    const cacheKey = `coin_scan_results_v103_${type}`;
 
     // 1. Check Redis Cache
     if (redis) {

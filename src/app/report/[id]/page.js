@@ -54,29 +54,30 @@ export default async function ReportPage({ params }) {
     const mdToHtml = (text, isHeading = false) => {
         if (!text) return '';
         let html = text
-            // 불필요한 [레이블] 제거 (링크 제외)
-            .replace(/\[[^\]]+\](?!\()/g, '')
+            // 1. 기본 마크다운 처리 (강조 및 링크)
             .replace(/\*\*(.*?)\*\*/g, '<strong style="color: #fff;">$1</strong>')
             .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: var(--accent-blue); text-decoration: underline;">$1</a>');
 
         if (!isHeading) {
             html = html
-                // 1. 모든 줄 시작 불릿 제거 및 찌꺼기 청소 (멀티라인 대응)
-                .replace(/^\s*([•·∙・●◦‣⁃■□*]\s*)+/gm, '')
-                .replace(/(?<=^|\n)\s*([^.!?\n<]*?(분석|심리|지지|저항|시나리오|전략|의견|결론|종합|지표|구조|거래량|캔들|파동|추세|이평선|리스크|목표|손절|참고|기존|현재|대응|관점):)/gm, '• <strong>$1</strong>')
+                // 2. 항목별 레이블 자동 강조 및 불릿 보정
+                // 이미 불릿(•)이 있는 경우와 없는 경우를 모두 대응하되, 중복 생성 방지
+                .replace(/(?<=^|\n)\s?(•?\s?)([^.!?\n<]*?(분석|심리|지지|저항|시나리오|전략|의견|결론|종합|지표|구조|거래량|캔들|파동|추세|이평선|리스크|목표|손절|참고|기존|현재|대응|관점|종목|섹터):)/gm, (match, p1, p2) => {
+                    return `• <strong>${p2.replace(/^•\s?/, '')}</strong>`;
+                })
 
-                // 2. 나열형 리스트 및 문장 강조 정제
-                .replace(/(?<=[.>!?]|^)\s?\*\s?/g, '\n• ')
+                // 3. 나열형 리스트 및 문장 강조 정제
+                .replace(/(?<=[.>!?]|^)\s?\*\s?/gm, '\n• ')
                 .replace(/\s?([0-9]+\.\s)/g, '\n<strong>$1</strong>')
-                .replace(/\s?(첫째|둘째|셋째|넷째|다섯째|마지막으로)(,\s?)/g, '\n<strong>$1$2</strong>')
 
-                // 3. 줄바꿈 보존 (\n -> <br/>)
+                // 4. 줄바꿈 보존 (\n -> <br/>)
                 .replace(/\n\n/g, '<br/><br/>')
                 .replace(/\n/g, '<br/>');
 
-            // 4. 중복 여백 및 불릿 정제
-            html = html.replace(/(<br\/>){3,}/g, '<br/><br/>')
-                .replace(/([•·∙・●◦‣⁃■□*]\s*){2,}/g, '•')
+            // 5. 과잉 파싱 및 중복 불릿 최종 정제 (안정성 확보)
+            html = html.replace(/(<br\/>){3,}/g, '<br/><br/>') // 과도한 공백 축소
+                .replace(/(•\s?){2,}/g, '• ') // 중복 불릿 축소
+                .replace(/<br\/>•/g, '<br/>•')
                 .replace(/^<br\/>/, '');
         }
 
